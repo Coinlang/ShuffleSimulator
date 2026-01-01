@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShuffleSim v5.0</title>
+    <title>ShuffleSim v5.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
@@ -30,18 +30,26 @@
         .suit-C { background-color: #D1FAE5 !important; color: #065F46; border-color: #A7F3D0; }
         .suit-D { background-color: #FFEDD5 !important; color: #9A3412; border-color: #FED7AA; }
 
-        /* --- 目に優しいメイト・ハイライト --- */
-        .rank-badge { position: absolute; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: rgba(255,255,255,0.4); z-index: 1; border: 1px solid rgba(0,0,0,0.03); transition: all 0.2s; }
-        
-        /* 隣接メイト時：落ち着いたチャコールグレーの二重線エフェクト */
+        /* --- 視認性向上：中央バッジとラベル --- */
+        .rank-badge { 
+            position: absolute; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            background-color: rgba(255,255,255,0.6); /* 背景を少し濃く */
+            z-index: 1; border: 1px solid rgba(0,0,0,0.05); transition: all 0.2s; 
+        }
+        /* 隣接メイト時のハイライト（v5.0と同じ落ち着いたスタイル） */
         .mate-badge-active { 
             border: 2px solid rgba(28, 28, 30, 0.4) !important; 
             background-color: rgba(255, 255, 255, 0.95) !important;
             box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 2px 8px rgba(0, 0, 0, 0.15);
             z-index: 5;
         }
-
-        .rank-label { position: relative; z-index: 2; font-size: 0.9rem; letter-spacing: -0.02em; }
+        /* 文字をくっきりと表示 */
+        .rank-label { 
+            position: relative; z-index: 2; font-size: 0.95rem; letter-spacing: -0.02em; 
+            font-weight: 700; /* 太く */
+            color: #000000; /* 真っ黒に */
+        }
+        
         .card-pos { position: absolute; bottom: 3px; right: 5px; font-size: 0.5rem; font-weight: 900; color: rgba(0,0,0,0.3); z-index: 5; }
         .card.face-down { background: #1C1C1E !important; border: none; background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 0); background-size: 4px 4px; }
 
@@ -62,7 +70,7 @@
 <div class="app-layout">
     <aside id="sidebar">
         <div class="flex justify-between items-center mb-5">
-            <h1 class="font-black text-xl tracking-tighter">ShuffleSim v5.0</h1>
+            <h1 class="font-black text-xl tracking-tighter">ShuffleSim v5.1</h1>
             <div class="flex gap-1">
                 <button onclick="undo()" style="padding:4px 8px">Undo</button>
                 <button onclick="redo()" style="padding:4px 8px">Redo</button>
