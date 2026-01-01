@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShuffleSim v3.8</title>
+    <title>ShuffleSim v3.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
@@ -51,7 +51,7 @@
 <div class="app-layout">
     <aside id="sidebar">
         <div class="flex justify-between items-center mb-5 lg:mb-10">
-            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v3.8</h1>
+            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v3.9</h1>
             <div class="flex gap-2 w-auto">
                 <button onclick="undo()" style="width: auto;">Undo</button>
                 <button onclick="redo()" style="width: auto;">Redo</button>
@@ -59,7 +59,7 @@
         </div>
 
         <div class="control-group">
-            <h2 class="section-label">スタック & プリセット</h2>
+            <h2 class="section-label">解析 & プリセット</h2>
             <div class="grid grid-cols-2 gap-2 mb-3">
                 <button onclick="applyPreset('ndo_chased')" class="bg-blue-50 border-blue-200 text-blue-700">CHaSeD (A-K)</button>
                 <button onclick="applyPreset('ndo_uspcc')">USPCC Order</button>
@@ -73,12 +73,18 @@
         </div>
 
         <div class="control-group">
-            <h2 class="section-label text-green-600">リフル (交互)</h2>
+            <h2 class="section-label text-green-600">リフル (ボトムから交互ドロップ)</h2>
             <div class="grid grid-cols-2 gap-2 mb-2">
-                <select id="riffleSplit" onchange="toggleRiffleField()" class="col-span-2"><option value="jitter">ランダム分け</option><option value="fixed">枚数指定</option></select>
+                <select id="riffleSplit" onchange="toggleRiffleField()" class="col-span-2"><option value="jitter">中央付近で分ける</option><option value="fixed">枚数を指定</option></select>
                 <input type="number" id="riffleFixed" value="26" class="hidden col-span-2">
-                <div class="col-span-2"><label class="text-[0.6rem] text-gray-400 font-bold">噛み合わせ上限</label>
-                <input type="number" id="chunkMax" value="3"></div>
+                <div class="col-span-2">
+                    <label class="text-[0.6rem] text-gray-400 font-bold">ドロップ枚数の範囲 (1〜n)</label>
+                    <div class="flex gap-2 items-center">
+                        <input type="number" id="riffleMin" value="1" class="text-center">
+                        <span>~</span>
+                        <input type="number" id="riffleMax" value="3" class="text-center">
+                    </div>
+                </div>
             </div>
             <button class="primary bg-green-600" onclick="opRiffle()">リフルを実行</button>
             <div id="riffleLog"></div>
@@ -97,7 +103,7 @@
         <div class="control-group">
             <h2 class="section-label text-gray-600">カット</h2>
             <div class="grid grid-cols-1 gap-2">
-                <input type="number" id="cutN" value="1" placeholder="ボトムへ送る枚数">
+                <input type="number" id="cutN" value="1" placeholder="枚数">
                 <button class="primary bg-gray-600" onclick="opCut()">カットを実行</button>
             </div>
         </div>
@@ -112,10 +118,9 @@
     <main>
         <div class="stats-container">
             <div class="stats-inner" id="statsBar">
-                <span class="stats-tag">枚数: 0</span>
-                <span class="stats-tag">メイト: 0</span>
+                <span class="stats-tag">枚数: 0</span><span class="stats-tag">メイト: 0</span>
             </div>
-            <button onclick="copyDeckText()" class="text-[11px] font-bold text-blue-600 w-auto border-none hover:underline">コピー</button>
+            <button onclick="copyDeckText()" class="text-[11px] font-bold text-blue-600 w-auto border-none">コピー</button>
         </div>
         <div class="flex-1 overflow-y-auto px-6 py-6 lg:px-12 bg-[#FAFAFA]" id="mainScroll">
             <div id="handArea" class="mb-10 hidden"><div class="area-label">移動した山</div><div id="handDisplay" class="card-grid"></div></div>
@@ -147,18 +152,31 @@
         p.deck = wh; p.tempHand = []; render();
     }
 
+    // --- 完全再実装：ボトムアップ・交互ドロップ型リフル ---
     function opRiffle() {
         const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
         let cp = (riffleSplit.value === 'fixed') ? parseInt(riffleFixed.value) : Math.floor(p.deck.length/2) + Math.floor(Math.random() * 7) - 3;
+        
         let L = p.deck.slice(0, cp), R = p.deck.slice(cp), res = [];
+        const rMin = parseInt(riffleMin.value), rMax = parseInt(riffleMax.value);
+
         while (L.length > 0 || R.length > 0) {
-            let probL = L.length / (L.length + R.length);
-            let side = (Math.random() < probL) ? L : R;
-            if (side.length === 0) side = (side === L) ? R : L;
-            let dropNum = Math.floor(Math.random() * parseInt(chunkMax.value)) + 1;
-            res.push(...side.splice(0, Math.min(dropNum, side.length)));
+            // パケットLのボトム（配列の末尾）からドロップ
+            if (L.length > 0) {
+                let n = Math.floor(Math.random() * (rMax - rMin + 1)) + rMin;
+                let chunk = L.splice(-Math.min(n, L.length));
+                res = [...chunk, ...res]; // デックの底から積み上げる
+            }
+            // パケットRのボトムからドロップ
+            if (R.length > 0) {
+                let n = Math.floor(Math.random() * (rMax - rMin + 1)) + rMin;
+                let chunk = R.splice(-Math.min(n, R.length));
+                res = [...chunk, ...res];
+            }
         }
-        p.deck = res; document.getElementById('riffleLog').innerText = `分割位置: ${cp} 枚目`; render();
+        p.deck = res; 
+        document.getElementById('riffleLog').innerText = `分割位置: ${cp} 枚目`; 
+        render();
     }
 
     function opFaro() {
@@ -175,10 +193,7 @@
     function render() {
         const p = piles[activePileIdx]; const full = [...p.tempHand, ...p.deck];
         let mates = 0; for (let i = 1; i < full.length; i++) if (isMate(full[i].label, full[i-1].label)) mates++;
-        
-        // 解析バーの更新
         document.getElementById('statsBar').innerHTML = `<span class="stats-tag">枚数: ${full.length}</span><span class="stats-tag">メイト: ${mates}</span>`;
-        
         handArea.classList.toggle('hidden', p.tempHand.length === 0);
         handDisplay.innerHTML = ''; p.tempHand.forEach((c, i) => drawCard(c, i + 1, true, p.referenceIds, full, handDisplay));
         deckDisplay.innerHTML = ''; p.deck.forEach((c, i) => drawCard(c, p.tempHand.length + i + 1, false, p.referenceIds, full, deckDisplay));
