@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShuffleSim v1.6</title>
+    <title>ShuffleSim v1.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
@@ -15,7 +15,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
             background-color: var(--mac-bg);
             color: #1C1C1E;
             -webkit-font-smoothing: antialiased;
@@ -38,7 +38,7 @@
         
         .card-pos {
             position: absolute; bottom: 6px; right: 8px;
-            font-size: 0.6rem; font-weight: 800; color: #AEAEB2;
+            font-size: 0.6rem; font-weight: 900; color: #AEAEB2;
         }
 
         .card.face-down { background: #1C1C1E !important; border: none; }
@@ -53,10 +53,10 @@
             border-radius: 14px; padding: 14px; margin-bottom: 16px;
             border: 0.5px solid rgba(0,0,0,0.05);
         }
-        .section-label { font-size: 0.7rem; font-weight: 800; color: #8E8E93; margin-bottom: 10px; display: block; }
+        .section-label { font-size: 0.65rem; font-weight: 800; color: #8E8E93; text-transform: uppercase; margin-bottom: 10px; display: block; }
 
         input, select, textarea {
-            background: #FFFFFF; border: 0.5px solid var(--mac-border); border-radius: 8px;
+            background: #FFFFFF; border: 1px solid var(--mac-border); border-radius: 8px;
             padding: 6px 10px; font-size: 0.85rem; width: 100%; outline: none;
         }
         input:focus { border-color: var(--mac-blue); }
@@ -66,10 +66,13 @@
             background: #FFFFFF; border: 1px solid var(--mac-border); transition: 0.1s;
         }
         button:hover { background: #F2F2F7; }
+        button:active { transform: scale(0.97); }
         button.primary { border: none; color: white; }
 
         .stats-tag { font-size: 0.75rem; font-weight: 700; color: #48484A; background: #FFFFFF; padding: 4px 14px; border-radius: 20px; border: 0.5px solid var(--mac-border); }
         .in-hand-highlight { border: 2px solid var(--mac-blue) !important; background: #F0F7FF !important; }
+        
+        .area-label { font-size: 0.6rem; font-weight: 900; color: var(--mac-blue); margin-bottom: 8px; text-transform: uppercase; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
@@ -81,12 +84,12 @@
             <div class="w-3 h-3 rounded-full bg-[#FEBC2E]"></div>
             <div class="w-3 h-3 rounded-full bg-[#28C840]"></div>
         </div>
-        <span class="font-bold text-sm text-gray-900 tracking-tight">ShuffleSim v1.6</span>
+        <span class="font-bold text-sm text-gray-900 tracking-tight">ShuffleSim v1.8</span>
     </div>
     <div class="flex gap-2">
-        <button onclick="undo()">元に戻す</button>
-        <button onclick="redo()">やり直す</button>
-        <button onclick="copyDeckText()" class="primary bg-black">コピー</button>
+        <button onclick="undo()">Undo</button>
+        <button onclick="redo()">Redo</button>
+        <button onclick="copyDeckText()" class="primary bg-black">結果をコピー</button>
     </div>
 </header>
 
@@ -100,14 +103,14 @@
                 <button onclick="applyPreset('ndo')">新品の並び (NDO)</button>
                 <button onclick="applyPreset('mnemonica')">Mnemonica スタック</button>
             </div>
-            <textarea id="customInput" rows="2" class="mt-3" placeholder="AS 2S 3Sv... または数字"></textarea>
+            <textarea id="customInput" rows="2" class="mt-3" placeholder="AS 2S 3Sv..."></textarea>
             <button class="w-full mt-2" onclick="applyCustom()">適用</button>
         </div>
 
         <div class="control-group">
             <h2 class="section-label text-blue-600">オーバーハンド</h2>
             <div class="grid grid-cols-1 gap-3 mb-3">
-                <label class="text-[0.6rem] font-black text-gray-400 block mb-[-8px]">剥ぎ取る枚数 (最小~最大)</label>
+                <label class="text-[0.6rem] font-black text-gray-400 block mb-[-8px]">1束の枚数 (最小~最大)</label>
                 <div class="flex items-center gap-2">
                     <input type="number" id="ohMin" value="1">
                     <span class="text-gray-300">~</span>
@@ -115,9 +118,8 @@
                 </div>
                 <div class="flex gap-2">
                     <button class="flex-1 primary bg-blue-600" onclick="opOverhandStep()">1束剥ぐ</button>
-                    <button class="flex-1" onclick="opOverhandFinish()">最後まで</button>
+                    <button class="flex-1" onclick="opOverhandFinish()">1周終える</button>
                 </div>
-                <div id="ohProgress" class="text-[10px] text-blue-500 font-bold text-center h-4"></div>
             </div>
         </div>
 
@@ -125,7 +127,7 @@
             <h2 class="section-label text-green-600">リフル</h2>
             <div class="grid grid-cols-1 gap-3">
                 <select id="riffleSplit" onchange="toggleRiffleField()">
-                    <option value="jitter">真ん中付近でランダムに分ける</option>
+                    <option value="jitter">中央付近でランダム</option>
                     <option value="fixed">正確な枚数で分ける</option>
                 </select>
                 <input type="number" id="riffleFixed" value="26" class="hidden">
@@ -146,29 +148,17 @@
         <div class="control-group">
             <h2 class="section-label text-indigo-600">ファロー</h2>
             <div class="grid grid-cols-2 gap-2 mb-3">
-                <div class="col-span-1">
-                    <label class="text-[0.6rem] font-black text-gray-400">モード</label>
-                    <select id="faroMode"><option value="out">Out</option><option value="in">In</option></select>
-                </div>
-                <div class="col-span-1">
-                    <label class="text-[0.6rem] font-black text-gray-400">比率</label>
-                    <select id="faroRatio"><option value="1-1">1:1</option><option value="2-2">2:2</option><option value="2-1">2:1</option></select>
-                </div>
-                <div class="col-span-2">
-                    <label class="text-[0.6rem] font-black text-gray-400">分割位置 (Split Point)</label>
-                    <input type="number" id="faroSplit" value="26">
-                </div>
+                <select id="faroMode"><option value="out">Out</option><option value="in">In</option></select>
+                <select id="faroRatio"><option value="1-1">1:1</option><option value="2-2">2:2</option><option value="2-1">2:1</option></select>
+                <input type="number" id="faroSplit" value="26" class="col-span-2" placeholder="分割位置">
             </div>
             <button class="w-full primary bg-indigo-600" onclick="opFaro()">ファロー実行</button>
         </div>
 
         <div class="control-group">
-            <h2 class="section-label text-gray-600">カット</h2>
-            <div class="grid grid-cols-1 gap-2">
-                <label class="text-[0.6rem] font-black text-gray-400">下へ送る枚数</label>
-                <input type="number" id="cutN" value="1">
-                <button class="w-full primary bg-gray-600" onclick="opCut()">カット実行</button>
-            </div>
+            <h2 class="section-label">カット</h2>
+            <input type="number" id="cutN" value="1" class="mb-2">
+            <button class="w-full primary bg-gray-600" onclick="opCut()">カット実行</button>
         </div>
     </aside>
 
@@ -181,8 +171,15 @@
                 <input type="text" id="seedInput" class="w-20 h-7 text-[10px] font-mono" placeholder="Auto">
             </div>
         </div>
-        <div class="flex-1 overflow-y-auto p-10 bg-[#FAFAFA]">
-            <div id="deckDisplay" class="card-grid"></div>
+        <div class="flex-1 overflow-y-auto p-10 bg-[#FAFAFA]" id="deckAreaContainer">
+            <div id="handArea" class="mb-10 hidden">
+                <div class="area-label">移動した山 (Moved to Hand)</div>
+                <div id="handDisplay" class="card-grid"></div>
+            </div>
+            <div id="deckArea">
+                <div class="area-label">現在の山 (Remaining Deck)</div>
+                <div id="deckDisplay" class="card-grid"></div>
+            </div>
         </div>
     </main>
 </div>
@@ -237,37 +234,62 @@
         };
     }
 
+    // 修正：末尾の v 削除ロジックを廃止。大文字小文字の統一のみ行う。
     function getPairKey(label) {
-        return label.toLowerCase().replace(/['v↑↓]+$/, '').replace(/'/g, '');
+        return label.toLowerCase();
     }
 
     function getColorFromKey(key) {
         if (!key) return '#FFFFFF';
         let hash = 0;
         for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash);
-        // 赤を避ける(Hue 50-300に限定)
-        const hue = 50 + (Math.abs(hash) % 250); 
+        // 赤を避ける(Hue 50-320に限定)
+        const hue = 50 + (Math.abs(hash) % 270); 
         return `hsl(${hue}, 45%, 96%)`;
     }
 
+    // --- オーバーハンド操作の再構築 ---
     function opOverhandStep() {
         const p = piles[activePileIdx];
-        if (p.deck.length === 0 && p.tempHand.length === 0) return;
+        if (p.deck.length === 0) return;
+        
         if (p.tempHand.length === 0) saveState();
+        
         const rng = getRNG();
         const min = parseInt(document.getElementById('ohMin').value) || 1;
         const max = parseInt(document.getElementById('ohMax').value) || 6;
+        
         let n = Math.floor(rng() * (max - min + 1)) + min;
         const bundle = p.deck.splice(0, Math.min(n, p.deck.length));
+        
+        // 束を新しい山（手元）の「上」に重ねる
         p.tempHand = [...bundle, ...p.tempHand];
-        if (p.deck.length === 0) { p.deck = p.tempHand; p.tempHand = []; document.getElementById('ohProgress').innerText = "1周完了"; }
-        else { document.getElementById('ohProgress').innerText = `残り: ${p.deck.length} 枚`; }
+        
         render();
     }
 
     function opOverhandFinish() {
         const p = piles[activePileIdx];
-        while (p.deck.length > 0) opOverhandStep();
+        if (p.deck.length === 0) return;
+        
+        saveState();
+        const rng = getRNG();
+        const min = parseInt(document.getElementById('ohMin').value) || 1;
+        const max = parseInt(document.getElementById('ohMax').value) || 6;
+
+        let workingDeck = [...p.deck];
+        let workingHand = [...p.tempHand];
+
+        while (workingDeck.length > 0) {
+            let n = Math.floor(rng() * (max - min + 1)) + min;
+            let bundle = workingDeck.splice(0, Math.min(n, workingDeck.length));
+            // 常に上（先頭）に挿入することで、数学的オーバーハンドを再現
+            workingHand = [...bundle, ...workingHand];
+        }
+
+        p.deck = workingHand;
+        p.tempHand = [];
+        render();
     }
 
     function opRiffle() {
@@ -329,8 +351,8 @@
         piles.forEach((p, i) => {
             const el = document.createElement('div');
             const isActive = i === activePileIdx;
-            el.className = `text-[11px] font-black cursor-pointer transition-all ${isActive ? 'text-black border-b-2 border-black pb-1' : 'text-gray-300 hover:text-gray-500'}`;
-            el.innerText = `パイル ${p.name} (${p.deck.length + (p.tempHand?.length || 0)})`;
+            el.className = `text-[11px] font-black cursor-pointer transition-all ${isActive ? 'text-black border-b-2 border-black pb-1' : 'text-gray-400 hover:text-gray-500'}`;
+            el.innerText = `パイル ${p.name} (${p.deck.length + p.tempHand.length})`;
             el.onclick = () => { activePileIdx = i; render(); };
             tabContainer.appendChild(el);
         });
@@ -343,16 +365,24 @@
         }
         document.getElementById('statsBar').innerHTML = `<span class="stats-tag">隣接ペア: ${adj}</span>`;
 
-        const deckArea = document.getElementById('deckDisplay');
-        deckArea.innerHTML = '';
-        fullDeck.forEach((card, idx) => deckArea.appendChild(createCardEl(card, idx + 1, idx < p.tempHand.length)));
+        // エリアの表示制御
+        const handArea = document.getElementById('handArea');
+        handArea.classList.toggle('hidden', p.tempHand.length === 0);
+        
+        const handDisplay = document.getElementById('handDisplay');
+        handDisplay.innerHTML = '';
+        p.tempHand.forEach((card, idx) => handDisplay.appendChild(createCardEl(card, idx + 1, true)));
+
+        const deckDisplay = document.getElementById('deckDisplay');
+        deckDisplay.innerHTML = '';
+        p.deck.forEach((card, idx) => deckDisplay.appendChild(createCardEl(card, p.tempHand.length + idx + 1, false)));
 
         if (sortableInstance) sortableInstance.destroy();
-        sortableInstance = Sortable.create(deckArea, { animation: 150, onEnd: function (evt) {
+        sortableInstance = Sortable.create(deckDisplay, { animation: 150, onEnd: function (evt) {
             saveState();
-            const d = fullDeck;
-            const item = d.splice(evt.oldIndex, 1)[0];
-            d.splice(evt.newIndex, 0, item);
+            const d = [...p.tempHand, ...p.deck];
+            const item = d.splice(evt.oldIndex + p.tempHand.length, 1)[0];
+            d.splice(evt.newIndex + p.tempHand.length, 0, item);
             p.tempHand = []; p.deck = d; render();
         }});
     }
@@ -368,7 +398,6 @@
             el.style.backgroundColor = getColorFromKey(getPairKey(card.label));
             const span = document.createElement('span');
             span.innerText = card.label;
-            // トランプ記法のみ赤色にする
             if (/^(?:[AJQK1-9]|10)[HD]$/.test(card.label)) span.classList.add('text-red-suit');
             el.appendChild(span);
         }
