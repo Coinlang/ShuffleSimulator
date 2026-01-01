@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShuffleSim v4.9</title>
+    <title>ShuffleSim v5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
-        :root { --mac-bg: #F2F2F7; --mac-sidebar: #E5E5EA; --mac-border: #D1D1D6; --mac-blue: #007AFF; --mate-gold: #FFD700; }
+        :root { --mac-bg: #F2F2F7; --mac-sidebar: #E5E5EA; --mac-border: #D1D1D6; --mac-blue: #007AFF; }
         body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; background-color: var(--mac-bg); color: #1C1C1E; margin: 0; padding: 0; overflow: hidden; }
         .app-layout { display: flex; flex-direction: column; height: 100vh; }
         @media (min-width: 1024px) { .app-layout { flex-direction: row; } }
@@ -15,10 +15,12 @@
         @media (min-width: 1024px) { aside { width: 340px; height: 100vh; border-bottom: none; border-right: 1px solid var(--mac-border); padding: 20px; } }
         main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #FFFFFF; }
         
+        /* 統計バー */
         .stats-container { background-color: #FBFBFC; border-bottom: 1px solid #E5E5E7; display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 16px; flex-shrink: 0; }
         .stats-inner { display: flex; gap: 12px; align-items: center; background: #EEEEF0; padding: 4px 14px; border-radius: 20px; border: 0.5px solid #D1D1D6; }
         .stats-tag { font-size: 0.75rem; font-weight: 800; color: #48484A; white-space: nowrap; }
 
+        /* カードエリア */
         .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 12px; padding: 0 10px; }
         @media (min-width: 768px) { .card-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 14px; padding: 0; } }
         .card { aspect-ratio: 2/3; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: grab; background: #FFFFFF; border: 1.5px solid rgba(0,0,0,0.1); box-shadow: 0 1px 3px rgba(0,0,0,0.08); position: relative; overflow: hidden; }
@@ -28,14 +30,22 @@
         .suit-C { background-color: #D1FAE5 !important; color: #065F46; border-color: #A7F3D0; }
         .suit-D { background-color: #FFEDD5 !important; color: #9A3412; border-color: #FED7AA; }
 
-        .rank-badge { position: absolute; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: rgba(255,255,255,0.5); z-index: 1; border: 1px solid rgba(0,0,0,0.05); transition: all 0.2s; }
-        /* メイト隣接時のハイライト */
-        .mate-badge-active { border: 3px solid var(--mate-gold) !important; box-shadow: 0 0 10px rgba(255, 215, 0, 0.6); transform: scale(1.1); z-index: 5; background-color: rgba(255, 255, 255, 0.9) !important; }
+        /* --- 目に優しいメイト・ハイライト --- */
+        .rank-badge { position: absolute; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: rgba(255,255,255,0.4); z-index: 1; border: 1px solid rgba(0,0,0,0.03); transition: all 0.2s; }
+        
+        /* 隣接メイト時：落ち着いたチャコールグレーの二重線エフェクト */
+        .mate-badge-active { 
+            border: 2px solid rgba(28, 28, 30, 0.4) !important; 
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 5;
+        }
 
-        .rank-label { position: relative; z-index: 2; }
+        .rank-label { position: relative; z-index: 2; font-size: 0.9rem; letter-spacing: -0.02em; }
         .card-pos { position: absolute; bottom: 3px; right: 5px; font-size: 0.5rem; font-weight: 900; color: rgba(0,0,0,0.3); z-index: 5; }
         .card.face-down { background: #1C1C1E !important; border: none; background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 0); background-size: 4px 4px; }
 
+        /* スラグ・ハイライト */
         .slug-active { border: 2.5px solid var(--mac-blue) !important; z-index: 10; }
         .slug-next { border-right: none !important; border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; margin-right: -13px; }
         .slug-prev { border-left: none !important; border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
@@ -52,7 +62,7 @@
 <div class="app-layout">
     <aside id="sidebar">
         <div class="flex justify-between items-center mb-5">
-            <h1 class="font-black text-xl tracking-tighter">ShuffleSim v4.9</h1>
+            <h1 class="font-black text-xl tracking-tighter">ShuffleSim v5.0</h1>
             <div class="flex gap-1">
                 <button onclick="undo()" style="padding:4px 8px">Undo</button>
                 <button onclick="redo()" style="padding:4px 8px">Redo</button>
@@ -217,13 +227,9 @@
 
     function render() {
         const p = piles[activePileIdx]; const full = [...p.tempHand, ...p.deck];
-        let matesCount = 0;
-        // メイト隣接判定用のマップ作成
-        const mateIdxMap = new Set();
+        let matesCount = 0; const mateIdxMap = new Set();
         for (let i = 0; i < full.length - 1; i++) {
-            if (isMate(full[i].label, full[i+1].label)) {
-                matesCount++; mateIdxMap.add(i); mateIdxMap.add(i+1);
-            }
+            if (isMate(full[i].label, full[i+1].label)) { matesCount++; mateIdxMap.add(i); mateIdxMap.add(i+1); }
         }
         document.getElementById('statsBar').innerHTML = `<span class="stats-tag">枚数: ${full.length}</span><span class="stats-tag">メイト: ${matesCount}</span>`;
         handArea.classList.toggle('hidden', p.tempHand.length === 0);
@@ -243,7 +249,6 @@
             const m = card.label.match(/^(\d+|[AJQK])([SHCD])$/);
             const isMateHighlighted = mateMap.has(absIdx);
             const badgeCls = `rank-badge ${isMateHighlighted ? 'mate-badge-active' : ''}`;
-            
             if (m) {
                 cls += ` suit-${m[2]}`;
                 el.innerHTML = `<div class="${badgeCls}" style="background-color:${getRankColor(m[1])}"></div><span class="rank-label">${card.label}</span>`;
