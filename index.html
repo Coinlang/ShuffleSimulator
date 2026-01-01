@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShuffleSim v2.4</title>
+    <title>ShuffleSim v2.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
@@ -46,8 +46,24 @@
             background: #FFFFFF; border: 0.5px solid rgba(0,0,0,0.15); box-shadow: 0 1px 2px rgba(0,0,0,0.04); position: relative;
         }
         .card-pos { position: absolute; bottom: 4px; right: 6px; font-size: 0.55rem; font-weight: 900; color: #AEAEB2; }
-        .card.face-down { background: #1C1C1E !important; border: none; }
-        .card.face-down::before { content: ""; color: rgba(255,255,255,0.05); font-size: 1.4rem; }
+        
+        /* 裏面デザインの修正 (Appleロゴ廃止 → 幾何学パターン) */
+        .card.face-down { 
+            background-color: #1C1C1E !important; 
+            border: none; 
+            background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 0);
+            background-size: 4px 4px;
+        }
+        .card.face-down::before { 
+            content: "S"; 
+            color: rgba(255,255,255,0.15); 
+            font-size: 1rem; 
+            font-weight: 900;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
         .text-red-suit { color: #FF3B30 !important; }
 
         /* UIパーツ */
@@ -71,7 +87,7 @@
 <div class="app-layout">
     <aside>
         <div class="flex justify-between items-center mb-5 lg:mb-10">
-            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v2.4</h1>
+            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v2.5</h1>
             <div class="flex gap-2 w-auto">
                 <button onclick="undo()" style="width: auto;">Undo</button>
                 <button onclick="redo()" style="width: auto;">Redo</button>
@@ -86,16 +102,15 @@
                 <button onclick="applyPreset('mnemonica')">Mnem</button>
             </div>
             
-            <div id="customPresetList" class="mb-3">
-                </div>
+            <div id="customPresetList" class="mb-3"></div>
 
             <div class="space-y-2 border-t pt-3 border-gray-200">
                 <textarea id="customInput" rows="1" placeholder="ラベル名 (コンマ/スペース区切り)"></textarea>
                 <div class="flex gap-2">
                     <input type="text" id="stackName" placeholder="保存時の名前" class="flex-1">
-                    <button onclick="saveCurrentStack()" class="primary w-24 text-[0.7rem]">今の並びを保存</button>
+                    <button onclick="saveCurrentStack()" class="primary w-24 text-[0.7rem]">並びを保存</button>
                 </div>
-                <button onclick="applyCustom()" class="bg-gray-100 font-bold border-gray-300">テキスト入力を適用</button>
+                <button onclick="applyCustom()" class="bg-gray-100 font-bold border-gray-300">テキスト適用</button>
             </div>
         </div>
 
@@ -150,7 +165,7 @@
             <div id="statsBar" class="flex gap-3"></div>
             <button onclick="copyDeckText()" class="text-[11px] font-bold text-blue-500 w-auto border-none">並びをコピー</button>
         </div>
-        <div class="flex-1 overflow-y-auto px-6 py-6 lg:px-12 bg-[#FAFAFA]">
+        <div class="flex-1 overflow-y-auto p-6 lg:p-12 bg-[#FAFAFA]">
             <div id="handArea" class="mb-10 hidden"><div class="area-label">移動した山 (Hand)</div><div id="handDisplay" class="card-grid"></div></div>
             <div id="deckArea"><div class="area-label" id="deckAreaLabel">現在の山 (Deck)</div><div id="deckDisplay" class="card-grid"></div></div>
         </div>
@@ -162,142 +177,27 @@
     let piles = Array.from({length: 4}, (_, i) => ({ name: String.fromCharCode(65 + i), deck: [], undoStack: [], redoStack: [], tempHand: [] }));
     let sortableInstance = null;
 
-    // --- Persistence (Local Storage) ---
-    function getCustomPresets() {
-        return JSON.parse(localStorage.getItem('shufflesim_custom_stacks') || '{}');
-    }
-    function saveCustomPreset(name, stackString) {
-        const presets = getCustomPresets();
-        presets[name] = stackString;
-        localStorage.setItem('shufflesim_custom_stacks', JSON.stringify(presets));
-        renderPresetsUI();
-    }
-    function deleteCustomPreset(name) {
-        const presets = getCustomPresets();
-        delete presets[name];
-        localStorage.setItem('shufflesim_custom_stacks', JSON.stringify(presets));
-        renderPresetsUI();
-    }
+    function getCustomPresets() { return JSON.parse(localStorage.getItem('shufflesim_custom_stacks') || '{}'); }
+    function saveCustomPreset(name, str) { const p = getCustomPresets(); p[name] = str; localStorage.setItem('shufflesim_custom_stacks', JSON.stringify(p)); renderPresetsUI(); }
+    function deleteCustomPreset(name) { const p = getCustomPresets(); delete p[name]; localStorage.setItem('shufflesim_custom_stacks', JSON.stringify(p)); renderPresetsUI(); }
     function renderPresetsUI() {
-        const list = document.getElementById('customPresetList');
-        const presets = getCustomPresets();
-        list.innerHTML = Object.keys(presets).length > 0 ? '<p class="text-[0.55rem] text-gray-400 font-bold mb-1">Custom Stacks:</p>' : '';
-        for (const name in presets) {
-            const row = document.createElement('div');
-            row.className = 'custom-preset-item';
-            row.innerHTML = `<button onclick="applyStackString('${presets[name]}')" class="text-[0.7rem] bg-white border-gray-200 text-left truncate flex-1">${name}</button>
-                             <button onclick="deleteCustomPreset('${name}')" class="del-btn">×</button>`;
+        const list = document.getElementById('customPresetList'); const p = getCustomPresets();
+        list.innerHTML = Object.keys(p).length > 0 ? '<p class="text-[0.55rem] text-gray-400 font-bold mb-1">Custom Stacks:</p>' : '';
+        for (const n in p) {
+            const row = document.createElement('div'); row.className = 'custom-preset-item';
+            row.innerHTML = `<button onclick="applyStackString('${p[n]}')" class="text-[0.7rem] bg-white border-gray-200 text-left truncate flex-1">${n}</button><button onclick="deleteCustomPreset('${n}')" class="del-btn">×</button>`;
             list.appendChild(row);
         }
     }
-
     function saveCurrentStack() {
-        const name = document.getElementById('stackName').value.trim();
-        if (!name) return alert("名前を入力してください");
+        const name = document.getElementById('stackName').value.trim(); if (!name) return alert("名前を入力してください");
         const full = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck];
-        const str = full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ');
-        saveCustomPreset(name, str);
-        document.getElementById('stackName').value = '';
+        const str = full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' '); saveCustomPreset(name, str); document.getElementById('stackName').value = '';
     }
 
-    // --- Logic ---
     function toggleRiffleField() { document.getElementById('riffleFixed').classList.toggle('hidden', document.getElementById('riffleSplit').value === 'jitter'); }
     function saveState() { const p = piles[activePileIdx]; p.undoStack.push(JSON.parse(JSON.stringify(p.deck))); if (p.undoStack.length > 200) p.undoStack.shift(); p.redoStack = []; }
     function undo() { const p = piles[activePileIdx]; if (p.undoStack.length === 0) return; p.redoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.undoStack.pop(); p.tempHand = []; render(); }
     function redo() { const p = piles[activePileIdx]; if (p.redoStack.length === 0) return; p.undoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.redoStack.pop(); render(); }
-    function getRNG() { return function() { return Math.random(); }; }
     function getPairKey(label) { return label.toLowerCase(); }
-    function getColorFromKey(key) { let hash = 0; for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash); const hue = 50 + (Math.abs(hash) % 270); return `hsl(${hue}, 45%, 96%)`; }
-
-    function opOverhandStep() {
-        const p = piles[activePileIdx]; if (p.deck.length === 0) return; if (p.tempHand.length === 0) saveState();
-        const min = parseInt(document.getElementById('ohMin').value) || 1; const max = parseInt(document.getElementById('ohMax').value) || 6;
-        let n = Math.floor(Math.random() * (max - min + 1)) + min;
-        p.tempHand = [...p.deck.splice(0, Math.min(n, p.deck.length)), ...p.tempHand]; render();
-    }
-    function opOverhandFinish() {
-        const p = piles[activePileIdx]; if (p.deck.length === 0 && p.tempHand.length === 0) return; saveState();
-        const min = parseInt(document.getElementById('ohMin').value) || 1; const max = parseInt(document.getElementById('ohMax').value) || 6;
-        let wd = [...p.deck], wh = [...p.tempHand];
-        while (wd.length > 0) { let n = Math.floor(Math.random() * (max - min + 1)) + min; wh = [...wd.splice(0, Math.min(n, wd.length)), ...wh]; }
-        p.deck = wh; p.tempHand = []; render();
-    }
-    function opRiffle() {
-        const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
-        const passes = parseInt(document.getElementById('rifflePasses').value) || 1; const cMax = parseInt(document.getElementById('chunkMax').value);
-        for (let ps = 0; ps < passes; ps++) {
-            let L = p.deck.length, cp = Math.floor(L/2) + Math.floor(Math.random() * 7) - 3;
-            let left = p.deck.slice(0, cp), right = p.deck.slice(cp), res = [];
-            while (left.length > 0 || right.length > 0) {
-                let side = (left.length > 0 && right.length > 0) ? (Math.random() < 0.5 ? left : right) : (left.length > 0 ? left : right);
-                res.push(...side.splice(0, Math.floor(Math.random() * cMax) + 1));
-            } p.deck = res;
-        } render();
-    }
-    function opFaro() {
-        const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
-        const split = parseInt(document.getElementById('faroSplit').value); const mode = document.getElementById('faroMode').value; const ratio = document.getElementById('faroRatio').value;
-        let A = p.deck.slice(0, split), B = p.deck.slice(split); let f = (mode === 'out') ? A : B, s = (mode === 'out') ? B : A, res = [];
-        let r1 = (ratio === '2-2') ? 2 : (ratio === '2-1' ? 2 : 1), r2 = (ratio === '2-2') ? 2 : 1;
-        while (f.length > 0 || s.length > 0) { if (f.length > 0) res.push(...f.splice(0, r1)); if (s.length > 0) res.push(...s.splice(0, r2)); }
-        p.deck = res; render();
-    }
-    function opCut() { saveState(); const d = piles[activePileIdx].deck; if (d.length === 0) return; let n = parseInt(document.getElementById('cutN').value) % d.length; piles[activePileIdx].deck = [...d.slice(n), ...d.slice(0, n)]; render(); }
-
-    function render() {
-        const p = piles[activePileIdx]; const full = [...p.tempHand, ...p.deck];
-        let adj = 0; for (let i = 1; i < full.length; i++) { if (getPairKey(full[i].label) === getPairKey(full[i-1].label)) adj++; }
-        document.getElementById('statsBar').innerHTML = `<span class="stats-tag">ペア: ${adj}</span><span class="stats-tag">枚数: ${full.length}</span>`;
-        document.getElementById('handArea').classList.toggle('hidden', p.tempHand.length === 0);
-        const hd = document.getElementById('handDisplay'); hd.innerHTML = ''; p.tempHand.forEach((c, i) => hd.appendChild(createCardEl(c, i + 1, true)));
-        const dd = document.getElementById('deckDisplay'); dd.innerHTML = ''; p.deck.forEach((c, i) => dd.appendChild(createCardEl(c, p.tempHand.length + i + 1, false)));
-        if (sortableInstance) sortableInstance.destroy();
-        sortableInstance = Sortable.create(dd, { animation: 150, onEnd: function (e) {
-            saveState(); const d = [...p.tempHand, ...p.deck]; const item = d.splice(e.oldIndex + p.tempHand.length, 1)[0]; d.splice(e.newIndex + p.tempHand.length, 0, item); p.tempHand = []; p.deck = d; render();
-        }});
-    }
-
-    function createCardEl(card, pos, inHand) {
-        const el = document.createElement('div'); el.className = `card ${card.faceUp ? '' : 'face-down'} ${inHand ? 'in-hand-highlight' : ''}`;
-        const posEl = document.createElement('div'); posEl.className = 'card-pos'; posEl.innerText = pos; el.appendChild(posEl);
-        if (card.faceUp) {
-            el.style.backgroundColor = getColorFromKey(getPairKey(card.label));
-            const span = document.createElement('span'); span.innerText = card.label; if (/^(?:[AJQK1-9]|10)[HD]$/.test(card.label)) span.classList.add('text-red-suit'); el.appendChild(span);
-        }
-        el.onclick = (e) => { saveState(); if (e.shiftKey) { const d = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; d.splice(pos - 1, 1); piles[activePileIdx].tempHand = []; piles[activePileIdx].deck = d; } else { card.faceUp = !card.faceUp; } render(); };
-        return el;
-    }
-
-    function applyStackString(str) {
-        saveState();
-        const tokens = str.split(/[\s,]+/).filter(t => t);
-        piles[activePileIdx].deck = tokens.map(t => ({ label: t.replace(/[v*↓]$/,''), faceUp: !/[v*↓]$/.test(t), id: Math.random() }));
-        piles[activePileIdx].tempHand = []; render();
-    }
-
-    function applyPreset(type) {
-        if (type === 'pairAa') applyStackString("A a B b C c D d E e F f G g H h I i J j K k L l M m N n O o P p Q q R r S s T t U u V v W w X x Y y Z z");
-        if (type === 'ndo') applyStackString("AS 2S 3S 4S 5S 6S 7S 8S 9S 10S JS QS KS AD 2D 3D 4D 5D 6D 7D 8D 9D 10D JD QD KD KC QC JC 10C 9C 8C 7C 6C 5C 4C 3C 2C AC KH QH JH 10H 9H 8H 7H 6H 5H 4H 3H 2H AH");
-        if (type === 'mnemonica') applyStackString("4C 2H 7D 3C 4H 6D AS 5H 9S 2S QH 3D QC 8H 6S 5S 9H KC 2D JH 3S 8S 6H 10C 5D KD 2C 3H 8D 5C KS JD 8C 10S KH JC 7S 10H AD 4S 7H 4D AC 9C JS QD 7C QS 10D 6C AH 9D");
-    }
-
-    function applyCustom() {
-        const val = document.getElementById('customInput').value.trim();
-        if (!val) return;
-        if (!isNaN(val)) {
-            saveState();
-            piles[activePileIdx].deck = Array.from({length: parseInt(val)}, (_, i) => ({ label: String(i+1), faceUp: true, id: Math.random() }));
-            piles[activePileIdx].tempHand = []; render();
-        } else {
-            applyStackString(val);
-        }
-        document.getElementById('customInput').value = '';
-    }
-
-    function copyDeckText() { const full = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; navigator.clipboard.writeText(full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ')); alert("コピーしました"); }
-
-    renderPresetsUI();
-    render();
-</script>
-</body>
-</html>
+    function getColorFromKey(key) { let h = 0; for (let i = 0; i < key.length; i++)
