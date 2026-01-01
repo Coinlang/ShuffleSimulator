@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShuffleSim v3.0</title>
+    <title>ShuffleSim v3.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
@@ -14,26 +14,34 @@
         aside { background-color: var(--mac-sidebar); border-bottom: 1px solid var(--mac-border); height: 48vh; overflow-y: auto; flex-shrink: 0; z-index: 20; padding: 12px; }
         @media (min-width: 1024px) { aside { width: 340px; height: 100vh; border-bottom: none; border-right: 1px solid var(--mac-border); padding: 20px; } }
         main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #FFFFFF; }
+        
+        /* --- 改良されたハイライト表示 --- */
         .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 12px; padding: 0 10px; }
         @media (min-width: 768px) { .card-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 14px; padding: 0; } }
-        .card { aspect-ratio: 2/3; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: grab; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 1px 2px rgba(0,0,0,0.04); position: relative; overflow: hidden; }
-        /* スラグ・ハイライト：基準と連続している場合に青い枠をつける */
-        .slug-next { border-right: 4px solid var(--mac-blue) !important; border-top-right-radius: 0; border-bottom-right-radius: 0; }
-        .slug-prev { border-left: 4px solid var(--mac-blue) !important; border-top-left-radius: 0; border-bottom-left-radius: 0; }
         
+        .card { 
+            aspect-ratio: 2/3; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: grab; 
+            background: #FFFFFF; border: 1px solid rgba(0,0,0,0.12); 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04); position: relative; overflow: hidden; 
+            transition: all 0.1s;
+        }
+
+        /* スラグ接続: 青い枠と背景の強調 */
+        .slug-active { border: 2px solid var(--mac-blue) !important; background-color: #f0f7ff !important; box-shadow: 0 0 8px rgba(0,122,255,0.2); }
+        .slug-next { border-right-style: dashed !important; border-right-width: 1px !important; border-top-right-radius: 0; border-bottom-right-radius: 0; margin-right: -12px; z-index: 10; }
+        .slug-prev { border-left-style: dashed !important; border-left-width: 1px !important; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+
         .card-pos { position: absolute; bottom: 3px; right: 5px; font-size: 0.5rem; font-weight: 900; color: #8E8E93; z-index: 5; }
         .suit-bar { position: absolute; top: 0; left: 0; width: 100%; height: 4px; }
-        .card.face-down { background-color: #1C1C1E !important; border: none; background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 0); background-size: 4px 4px; }
-        .card.face-down::before { content: "S"; color: rgba(255,255,255,0.15); font-size: 1rem; font-weight: 900; border: 1px solid rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 4px; }
         .txt-S { color: #1e293b; } .txt-C { color: #065f46; } .txt-H { color: #be123c; } .txt-D { color: #b45309; }
+        
         .control-group { background: rgba(255,255,255,0.6); border-radius: 12px; padding: 12px; margin-bottom: 16px; border: 0.5px solid rgba(0,0,0,0.05); }
         .section-label { font-size: 0.65rem; font-weight: 800; color: #8E8E93; text-transform: uppercase; margin-bottom: 8px; display: block; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px; }
         input, select, textarea { background: #FFFFFF; border: 1px solid var(--mac-border); border-radius: 6px; padding: 5px 8px; font-size: 0.8rem; outline: none; width: 100%; }
-        button { font-size: 0.8rem; font-weight: 600; padding: 7px 10px; border-radius: 8px; background: #FFFFFF; border: 1px solid var(--mac-border); transition: 0.1s; width: 100%; cursor: pointer; }
+        button { font-size: 0.75rem; font-weight: 600; padding: 7px 10px; border-radius: 8px; background: #FFFFFF; border: 1px solid var(--mac-border); transition: 0.1s; width: 100%; cursor: pointer; }
         button.primary { border: none; color: white; background-color: var(--mac-blue); }
-        .del-btn { width: 22px; height: 22px; padding: 0; background: #FF3B30; color: white; border: none; border-radius: 50%; font-size: 10px; flex-shrink: 0; }
         .stats-tag { font-size: 0.62rem; font-weight: 700; color: #48484A; background: #FFFFFF; padding: 2px 8px; border-radius: 20px; border: 0.5px solid var(--mac-border); white-space: nowrap; }
-        .in-hand-highlight { border: 2px solid var(--mac-blue) !important; background: #F0F7FF !important; }
         .area-label { font-size: 0.6rem; font-weight: 900; color: var(--mac-blue); margin-bottom: 10px; text-transform: uppercase; border-left: 4px solid var(--mac-blue); padding-left: 8px; }
     </style>
 </head>
@@ -41,49 +49,51 @@
 <div class="app-layout">
     <aside id="sidebar">
         <div class="flex justify-between items-center mb-5 lg:mb-10">
-            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v3.0</h1>
+            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v3.2</h1>
             <div class="flex gap-2 w-auto">
                 <button onclick="undo()" style="width: auto;">Undo</button>
                 <button onclick="redo()" style="width: auto;">Redo</button>
             </div>
         </div>
+
         <div class="control-group">
-            <h2 class="section-label">スタック & 基準設定</h2>
+            <h2 class="section-label">スタック & 解析基準</h2>
             <div class="grid grid-cols-2 gap-2 mb-3">
-                <button onclick="applyPreset('ndo')" class="text-[0.7rem]">NDO</button>
-                <button onclick="applyPreset('mnemonica')" class="text-[0.7rem]">Mnemonica</button>
-                <button onclick="setReference()" class="col-span-2 primary">現在の並びを基準に設定</button>
+                <button onclick="applyPreset('ndo_chased')" class="bg-blue-50 border-blue-200 text-blue-700">CHaSeD (A-K)</button>
+                <button onclick="applyPreset('ndo')">USPCC</button>
+                <button onclick="applyPreset('mnemonica')">Mnemonica</button>
+                <button onclick="setReference()" class="primary">現在を基準に</button>
             </div>
             <div id="customPresetList" class="mb-3"></div>
-            <div class="space-y-2 border-t pt-3 border-gray-200">
-                <textarea id="customInput" rows="1" placeholder="Q W E R T..."></textarea>
-                <div class="flex gap-2">
-                    <input type="text" id="stackName" placeholder="保存名" class="flex-1">
-                    <button onclick="saveCurrentStack()" class="primary w-24 text-[0.7rem]">並び保存</button>
-                </div>
-                <button onclick="applyCustom()" class="bg-gray-100 font-bold border-gray-300">テキスト適用</button>
+            <textarea id="customInput" rows="1" placeholder="AS, 2S, 3S..." class="mb-2"></textarea>
+            <div class="flex gap-2">
+                <input type="text" id="stackName" placeholder="保存名" class="flex-1">
+                <button onclick="saveCurrentStack()" class="primary w-16 text-[0.6rem]">保存</button>
             </div>
         </div>
+
         <div class="control-group">
             <h2 class="section-label text-blue-600">オーバーハンド</h2>
-            <div class="flex gap-2 mb-3 items-center">
+            <div class="flex gap-2 mb-2 items-center">
                 <input type="number" id="ohMin" value="1" class="text-center w-12"><span class="text-gray-300">~</span>
                 <input type="number" id="ohMax" value="6" class="text-center w-12">
-                <button class="primary bg-blue-600" onclick="opOverhandStep()">1束剥ぐ</button>
+                <button class="primary bg-blue-600" onclick="opOverhandStep()">1束</button>
             </div>
-            <button onclick="opOverhandFinish()">最後まで剥ぐ（1周）</button>
+            <button onclick="opOverhandFinish()">1周終える</button>
         </div>
+
         <div class="control-group">
-            <h2 class="section-label text-green-600">リフル</h2>
+            <h2 class="section-label text-green-600">リフル (交互落とし)</h2>
             <div class="grid grid-cols-2 gap-2 mb-2">
                 <select id="riffleSplit" onchange="toggleRiffleField()" class="col-span-2"><option value="jitter">ランダム分け</option><option value="fixed">枚数指定</option></select>
                 <input type="number" id="riffleFixed" value="26" class="hidden col-span-2">
-                <input type="number" id="chunkMax" value="3" placeholder="噛み合わせ">
-                <input type="number" id="rifflePasses" value="1" placeholder="回数">
+                <div class="col-span-2"><label class="text-[0.6rem] text-gray-400 font-bold">噛み合わせ上限</label>
+                <input type="number" id="chunkMax" value="3"></div>
             </div>
             <button class="primary bg-green-600" onclick="opRiffle()">リフル実行</button>
-            <div id="riffleLog" class="text-[10px] text-green-700 font-bold mt-2 text-center h-3"></div>
+            <div id="riffleLog" class="text-[10px] text-green-700 font-bold mt-1 text-center h-3"></div>
         </div>
+
         <div class="control-group">
             <h2 class="section-label text-indigo-600">ファロー & カット</h2>
             <div class="grid grid-cols-2 gap-2 mb-2">
@@ -94,17 +104,19 @@
             </div>
         </div>
     </aside>
+
     <main>
         <div class="h-10 px-4 border-b border-gray-100 flex items-center justify-between bg-white/80 sticky top-0 z-10 backdrop-blur-sm overflow-hidden">
             <div id="statsBar" class="flex gap-1 overflow-x-auto items-center no-scrollbar"></div>
             <button onclick="copyDeckText()" class="text-[10px] font-bold text-blue-500 flex-shrink-0 ml-2">コピー</button>
         </div>
         <div class="flex-1 overflow-y-auto px-6 py-6 lg:px-12 bg-[#FAFAFA]" id="mainScroll">
-            <div id="handArea" class="mb-10 hidden"><div class="area-label">移動した山 (Hand)</div><div id="handDisplay" class="card-grid"></div></div>
-            <div id="deckArea"><div class="area-label" id="deckAreaLabel">現在の山 (Deck)</div><div id="deckDisplay" class="card-grid"></div></div>
+            <div id="handArea" class="mb-10 hidden"><div class="area-label">移動した山</div><div id="handDisplay" class="card-grid"></div></div>
+            <div id="deckArea"><div class="area-label" id="deckAreaLabel">デック本体</div><div id="deckDisplay" class="card-grid"></div></div>
         </div>
     </main>
 </div>
+
 <script>
     let activePileIdx = 0;
     let piles = Array.from({length: 4}, (_, i) => ({ name: String.fromCharCode(65 + i), deck: [], undoStack: [], redoStack: [], tempHand: [], referenceIds: [] }));
@@ -118,10 +130,11 @@
         const list = document.getElementById('customPresetList'); const p = getCustomPresets();
         list.innerHTML = Object.keys(p).length > 0 ? '<p class="text-[0.55rem] text-gray-400 font-bold mb-1">Custom:</p>' : '';
         for (const n in p) {
-            const row = document.createElement('div'); row.className = 'custom-preset-item';
-            const applyBtn = document.createElement('button'); applyBtn.className = 'text-[0.7rem] bg-white border-gray-200 text-left truncate flex-1';
+            const row = document.createElement('div'); row.className = 'flex items-center gap-1 mb-1';
+            const applyBtn = document.createElement('button'); applyBtn.className = 'text-[0.7rem] bg-white border-gray-200 text-left truncate flex-1 px-2 py-1';
             applyBtn.innerText = n; applyBtn.onclick = () => applyStackString(p[n]);
-            const delBtn = document.createElement('button'); delBtn.className = 'del-btn'; delBtn.innerText = '×'; delBtn.onclick = () => deleteCustomPreset(n);
+            const delBtn = document.createElement('button'); delBtn.innerText = '×'; delBtn.style = "width:18px; height:18px; background:#ff3b30; color:white; border-radius:50%; font-size:10px; border:none;";
+            delBtn.onclick = () => deleteCustomPreset(n);
             row.appendChild(applyBtn); row.appendChild(delBtn); list.appendChild(row);
         }
     }
@@ -135,11 +148,7 @@
     function saveState() { const p = piles[activePileIdx]; p.undoStack.push(JSON.parse(JSON.stringify(p.deck))); if (p.undoStack.length > 200) p.undoStack.shift(); p.redoStack = []; }
     function undo() { const p = piles[activePileIdx]; if (p.undoStack.length === 0) return; p.redoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.undoStack.pop(); p.tempHand = []; render(); }
     function redo() { const p = piles[activePileIdx]; if (p.redoStack.length === 0) return; p.undoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.redoStack.pop(); render(); }
-    
-    function setReference() {
-        const p = piles[activePileIdx]; const full = [...p.tempHand, ...p.deck];
-        p.referenceIds = full.map(c => c.id); render();
-    }
+    function setReference() { const p = piles[activePileIdx]; const full = [...p.tempHand, ...p.deck]; p.referenceIds = full.map(c => c.id); render(); }
 
     function opOverhandStep() {
         const p = piles[activePileIdx]; if (p.deck.length === 0) return; if (p.tempHand.length === 0) saveState();
@@ -152,13 +161,23 @@
         while (wd.length > 0) { let n = Math.floor(Math.random() * (ohMax.value-ohMin.value+1))+parseInt(ohMin.value); wh = [...wd.splice(0, Math.min(n, wd.length)), ...wh]; }
         p.deck = wh; p.tempHand = []; render();
     }
+
+    // --- 修正されたリフルロジック（交互落とし強制） ---
     function opRiffle() {
         const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
         let cp = (riffleSplit.value === 'fixed') ? parseInt(riffleFixed.value) : Math.floor(p.deck.length/2) + Math.floor(Math.random() * 7) - 3;
         let L = p.deck.slice(0, cp), R = p.deck.slice(cp), res = [];
-        while (L.length > 0 || R.length > 0) { let s = (L.length > 0 && R.length > 0) ? (Math.random() < 0.5 ? L : R) : (L.length > 0 ? L : R); res.push(...s.splice(0, Math.floor(Math.random() * parseInt(chunkMax.value)) + 1)); }
+        
+        let turn = Math.random() < 0.5 ? 'L' : 'R';
+        while (L.length > 0 || R.length > 0) {
+            let activeSide = (turn === 'L' && L.length > 0) ? L : (R.length > 0 ? R : L);
+            let n = Math.floor(Math.random() * parseInt(chunkMax.value)) + 1;
+            res.push(...activeSide.splice(0, Math.min(n, activeSide.length)));
+            turn = (activeSide === L) ? 'R' : 'L'; // 反対側へスイッチ
+        }
         p.deck = res; document.getElementById('riffleLog').innerText = `分割: ${cp} 枚`; render();
     }
+
     function opFaro() {
         const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
         let mid = Math.floor(p.deck.length/2), A = p.deck.slice(0, mid), B = p.deck.slice(mid);
@@ -170,21 +189,16 @@
     function opCut() { const p = piles[activePileIdx]; if (p.deck.length === 0) return; saveState(); let n = parseInt(cutN.value) % p.deck.length; p.deck = [...p.deck.slice(n), ...p.deck.slice(0, n)]; render(); }
 
     function getLCS(current, ref) {
-        let m = current.length, n = ref.length;
+        let m = current.length, n = ref.length; if (m === 0 || n === 0) return 0;
         let dp = Array.from({ length: m + 1 }, () => new Uint8Array(n + 1));
-        for (let i = 1; i <= m; i++) {
-            for (let j = 1; j <= n; j++) {
-                if (current[i-1] === ref[j-1]) dp[i][j] = dp[i-1][j-1] + 1;
-                else dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
-            }
-        }
+        for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) 
+            dp[i][j] = (current[i-1] === ref[j-1]) ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
         return dp[m][n];
     }
 
     function render() {
         const p = piles[activePileIdx]; const full = [...p.tempHand, ...p.deck];
-        let mates = 0; for (let i = 1; i < full.length; i++) { if (isMate(full[i].label, full[i-1].label)) mates++; }
-        
+        let mates = 0; for (let i = 1; i < full.length; i++) if (isMate(full[i].label, full[i-1].label)) mates++;
         const lcsLen = getLCS(full.map(c=>c.id), p.referenceIds);
         const survival = p.referenceIds.length > 0 ? ((lcsLen / p.referenceIds.length) * 100).toFixed(1) : "0";
 
@@ -195,8 +209,8 @@
         `;
         
         handArea.classList.toggle('hidden', p.tempHand.length === 0);
-        handDisplay.innerHTML = ''; p.tempHand.forEach((c, i) => handDisplay.appendChild(createCardEl(c, i + 1, true, p.referenceIds, full)));
-        deckDisplay.innerHTML = ''; p.deck.forEach((c, i) => deckDisplay.appendChild(createCardEl(c, p.tempHand.length + i + 1, false, p.referenceIds, full)));
+        handDisplay.innerHTML = ''; p.tempHand.forEach((c, i) => drawCard(c, i + 1, true, p.referenceIds, full, handDisplay));
+        deckDisplay.innerHTML = ''; p.deck.forEach((c, i) => drawCard(c, p.tempHand.length + i + 1, false, p.referenceIds, full, deckDisplay));
         if (sortableInstance) sortableInstance.destroy();
         sortableInstance = Sortable.create(deckDisplay, { animation: 150, onEnd: function (e) {
             saveState(); const d = [...p.tempHand, ...p.deck]; const item = d.splice(e.oldIndex + p.tempHand.length, 1)[0]; d.splice(e.newIndex + p.tempHand.length, 0, item); p.tempHand = []; p.deck = d; render();
@@ -210,24 +224,21 @@
         return l1.toLowerCase() === l2.toLowerCase();
     }
 
-    function createCardEl(card, pos, inHand, refIds, fullDeck) {
+    function drawCard(card, pos, inHand, refIds, fullDeck, container) {
         const el = document.createElement('div');
-        // ハイライト判定: 基準でも隣同士だったか
-        let classes = `card ${card.faceUp ? '' : 'face-down'} ${inHand ? 'in-hand-highlight' : ''}`;
         const currentIdx = pos - 1;
         const refIdx = refIds.indexOf(card.id);
+        let cls = `card ${card.faceUp ? '' : 'face-down'} ${inHand ? 'in-hand-highlight' : ''}`;
         
+        // スラグ連結判定
         if (refIdx !== -1) {
-            if (currentIdx < fullDeck.length - 1) {
-                const nextCardId = fullDeck[currentIdx + 1].id;
-                if (refIds[refIdx + 1] === nextCardId) el.classList.add('slug-next');
-            }
-            if (currentIdx > 0) {
-                const prevCardId = fullDeck[currentIdx - 1].id;
-                if (refIds[refIdx - 1] === prevCardId) el.classList.add('slug-prev');
-            }
+            let hasNext = (currentIdx < fullDeck.length - 1 && refIds[refIdx + 1] === fullDeck[currentIdx + 1].id);
+            let hasPrev = (currentIdx > 0 && refIds[refIdx - 1] === fullDeck[currentIdx - 1].id);
+            if (hasNext || hasPrev) cls += ' slug-active';
+            if (hasNext) cls += ' slug-next';
+            if (hasPrev) cls += ' slug-prev';
         }
-        el.className = classes;
+        el.className = cls;
 
         const posEl = document.createElement('div'); posEl.className = 'card-pos'; posEl.innerText = pos; el.appendChild(posEl);
         if (card.faceUp) {
@@ -236,13 +247,13 @@
                 const c = COLORS[m[2]]; el.style.backgroundColor = c.bg; el.classList.add(c.txt);
                 const b = document.createElement('div'); b.className = 'suit-bar'; b.style.backgroundColor = c.bar; el.appendChild(b);
             } else {
-                let h = 0; const key = card.label.toLowerCase(); for(let i=0; i<key.length; i++) h = key.charCodeAt(i) + ((h << 5) - h);
+                let h = 0; const k = card.label.toLowerCase(); for(let i=0; i<k.length; i++) h = k.charCodeAt(i) + ((h << 5) - h);
                 el.style.backgroundColor = `hsl(${50 + (Math.abs(h) % 270)}, 45%, 96%)`;
             }
             const s = document.createElement('span'); s.innerText = card.label; el.appendChild(s);
         }
         el.onclick = (e) => { saveState(); if (e.shiftKey) { const d = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; d.splice(pos - 1, 1); piles[activePileIdx].tempHand = []; piles[activePileIdx].deck = d; } else { card.faceUp = !card.faceUp; } render(); };
-        return el;
+        container.appendChild(el);
     }
 
     function applyStackString(str) {
@@ -257,6 +268,11 @@
     }
 
     function applyPreset(t) {
+        if (t === 'ndo_chased') {
+            const s = ['C','H','S','D'], r = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+            let res = []; s.forEach(suit => r.forEach(rank => res.push(rank + suit)));
+            applyStackString(res.join(' '));
+        }
         if (t === 'ndo') applyStackString("AS 2S 3S 4S 5S 6S 7S 8S 9S 10S JS QS KS AD 2D 3D 4D 5D 6D 7D 8D 9D 10D JD QD KD KC QC JC 10C 9C 8C 7C 6C 5C 4C 3C 2C AC KH QH JH 10H 9H 8H 7H 6H 5H 4H 3H 2H AH");
         if (t === 'mnemonica') applyStackString("4C 2H 7D 3C 4H 6D AS 5H 9S 2S QH 3D QC 8H 6S 5S 9H KC 2D JH 3S 8S 6H 10C 5D KD 2C 3H 8D 5C KS JD 8C 10S KH JC 7S 10H AD 4S 7H 4D AC 9C JS QD 7C QS 10D 6C AH 9D");
     }
@@ -264,12 +280,13 @@
     function applyCustom() {
         const i = document.getElementById('customInput'); if (!i.value.trim()) return;
         if (!isNaN(i.value)) {
-            saveState(); const newDeck = Array.from({length: parseInt(i.value)}, (_, j) => ({ label: String(j+1), faceUp: true, id: Math.random().toString(36).substr(2, 9) }));
-            piles[activePileIdx].deck = newDeck; piles[activePileIdx].tempHand = []; piles[activePileIdx].referenceIds = newDeck.map(c=>c.id); render();
+            saveState(); const n = parseInt(i.value);
+            const nd = Array.from({length: n}, (_, j) => ({ label: String(j+1), faceUp: true, id: Math.random().toString(36).substr(2, 9) }));
+            piles[activePileIdx].deck = nd; piles[activePileIdx].tempHand = []; piles[activePileIdx].referenceIds = nd.map(c=>c.id); render();
         } else applyStackString(i.value); i.value = '';
     }
 
-    function copyDeckText() { const full = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; navigator.clipboard.writeText(full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ')); alert("コピー完了"); }
+    function copyDeckText() { const f = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; navigator.clipboard.writeText(f.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ')); alert("コピー完了"); }
     renderPresetsUI(); render();
 </script>
 </body>
