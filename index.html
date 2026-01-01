@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShuffleSim v4.8</title>
+    <title>ShuffleSim v4.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
-        :root { --mac-bg: #F2F2F7; --mac-sidebar: #E5E5EA; --mac-border: #D1D1D6; --mac-blue: #007AFF; }
+        :root { --mac-bg: #F2F2F7; --mac-sidebar: #E5E5EA; --mac-border: #D1D1D6; --mac-blue: #007AFF; --mate-gold: #FFD700; }
         body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; background-color: var(--mac-bg); color: #1C1C1E; margin: 0; padding: 0; overflow: hidden; }
         .app-layout { display: flex; flex-direction: column; height: 100vh; }
         @media (min-width: 1024px) { .app-layout { flex-direction: row; } }
@@ -22,19 +22,23 @@
         .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 12px; padding: 0 10px; }
         @media (min-width: 768px) { .card-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 14px; padding: 0; } }
         .card { aspect-ratio: 2/3; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: grab; background: #FFFFFF; border: 1.5px solid rgba(0,0,0,0.1); box-shadow: 0 1px 3px rgba(0,0,0,0.08); position: relative; overflow: hidden; }
+        
         .suit-S { background-color: #E0E7FF !important; color: #312E81; border-color: #C7D2FE; }
         .suit-H { background-color: #FFE4E6 !important; color: #9F1239; border-color: #FECDD3; }
         .suit-C { background-color: #D1FAE5 !important; color: #065F46; border-color: #A7F3D0; }
         .suit-D { background-color: #FFEDD5 !important; color: #9A3412; border-color: #FED7AA; }
 
-        .slug-active { border: 2.5px solid var(--mac-blue) !important; z-index: 10; }
-        .slug-next { border-right: none !important; border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; margin-right: -13px; }
-        .slug-prev { border-left: none !important; border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
+        .rank-badge { position: absolute; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: rgba(255,255,255,0.5); z-index: 1; border: 1px solid rgba(0,0,0,0.05); transition: all 0.2s; }
+        /* メイト隣接時のハイライト */
+        .mate-badge-active { border: 3px solid var(--mate-gold) !important; box-shadow: 0 0 10px rgba(255, 215, 0, 0.6); transform: scale(1.1); z-index: 5; background-color: rgba(255, 255, 255, 0.9) !important; }
 
-        .rank-badge { position: absolute; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: rgba(255,255,255,0.4); z-index: 1; border: 1px solid rgba(0,0,0,0.05); }
         .rank-label { position: relative; z-index: 2; }
         .card-pos { position: absolute; bottom: 3px; right: 5px; font-size: 0.5rem; font-weight: 900; color: rgba(0,0,0,0.3); z-index: 5; }
         .card.face-down { background: #1C1C1E !important; border: none; background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 0); background-size: 4px 4px; }
+
+        .slug-active { border: 2.5px solid var(--mac-blue) !important; z-index: 10; }
+        .slug-next { border-right: none !important; border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; margin-right: -13px; }
+        .slug-prev { border-left: none !important; border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
 
         .control-group { background: rgba(255,255,255,0.6); border-radius: 12px; padding: 12px; margin-bottom: 16px; border: 0.5px solid rgba(0,0,0,0.05); }
         .section-label { font-size: 0.65rem; font-weight: 800; color: #8E8E93; text-transform: uppercase; margin-bottom: 8px; display: block; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px; }
@@ -48,7 +52,7 @@
 <div class="app-layout">
     <aside id="sidebar">
         <div class="flex justify-between items-center mb-5">
-            <h1 class="font-black text-xl tracking-tighter">ShuffleSim v4.8</h1>
+            <h1 class="font-black text-xl tracking-tighter">ShuffleSim v4.9</h1>
             <div class="flex gap-1">
                 <button onclick="undo()" style="padding:4px 8px">Undo</button>
                 <button onclick="redo()" style="padding:4px 8px">Redo</button>
@@ -123,7 +127,7 @@
             <div class="stats-inner" id="statsBar">
                 <span class="stats-tag">枚数: 0</span><span class="stats-tag">メイト: 0</span>
             </div>
-            <button onclick="copyDeckText()" class="text-[11px] font-bold text-blue-600 w-auto border-none">コピー</button>
+            <button onclick="copyDeckText()" class="text-[11px] font-bold text-blue-600 w-auto border-none hover:underline">コピー</button>
         </div>
         <div class="flex-1 overflow-y-auto px-6 py-6 lg:px-12 bg-[#FAFAFA]" id="mainScroll">
             <div id="handArea" class="mb-10 hidden"><div class="area-label">移動した山</div><div id="handDisplay" class="card-grid"></div></div>
@@ -153,17 +157,15 @@
         return false;
     }
 
-    // --- メイト判定の厳格化 v4.8 ---
     function isMate(l1, l2) {
         if (!l1 || !l2) return false;
         const m1 = l1.match(/^(\d+|[AJQK])([SHCD])$/), m2 = l2.match(/^(\d+|[AJQK])([SHCD])$/);
         if (m1 && m2) {
             const sameRank = m1[1] === m2[1];
-            const color1 = (m1[2] === 'S' || m1[2] === 'C') ? 'Black' : 'Red';
-            const color2 = (m2[2] === 'S' || m2[2] === 'C') ? 'Black' : 'Red';
-            return sameRank && color1 === color2; // 同数字かつ同色
+            const color1 = (m1[2] === 'S' || m1[2] === 'C') ? 'B' : 'R';
+            const color2 = (m2[2] === 'S' || m2[2] === 'C') ? 'B' : 'R';
+            return sameRank && color1 === color2;
         }
-        // アルファベットペア
         return l1.toLowerCase() === l2.toLowerCase() && l1 !== l2;
     }
 
@@ -215,32 +217,50 @@
 
     function render() {
         const p = piles[activePileIdx]; const full = [...p.tempHand, ...p.deck];
-        let mates = 0; for (let i = 1; i < full.length; i++) if (isMate(full[i].label, full[i-1].label)) mates++;
-        document.getElementById('statsBar').innerHTML = `<span class="stats-tag">枚数: ${full.length}</span><span class="stats-tag">メイト: ${mates}</span>`;
+        let matesCount = 0;
+        // メイト隣接判定用のマップ作成
+        const mateIdxMap = new Set();
+        for (let i = 0; i < full.length - 1; i++) {
+            if (isMate(full[i].label, full[i+1].label)) {
+                matesCount++; mateIdxMap.add(i); mateIdxMap.add(i+1);
+            }
+        }
+        document.getElementById('statsBar').innerHTML = `<span class="stats-tag">枚数: ${full.length}</span><span class="stats-tag">メイト: ${matesCount}</span>`;
         handArea.classList.toggle('hidden', p.tempHand.length === 0);
-        handDisplay.innerHTML = ''; p.tempHand.forEach((c, i) => drawCard(c, i + 1, true, p.referenceIds, full, handDisplay));
-        deckDisplay.innerHTML = ''; p.deck.forEach((c, i) => drawCard(c, p.tempHand.length + i + 1, false, p.referenceIds, full, deckDisplay));
+        handDisplay.innerHTML = ''; p.tempHand.forEach((c, i) => drawCard(c, i, true, p.referenceIds, full, handDisplay, mateIdxMap));
+        deckDisplay.innerHTML = ''; p.deck.forEach((c, i) => drawCard(c, p.tempHand.length + i, false, p.referenceIds, full, deckDisplay, mateIdxMap));
         if (sortableInstance) sortableInstance.destroy();
         sortableInstance = Sortable.create(deckDisplay, { animation: 150, onEnd: function (e) {
             saveState(); const d = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; const item = d.splice(e.oldIndex, 1)[0]; d.splice(e.newIndex, 0, item); piles[activePileIdx].deck = d; render();
         }});
     }
 
-    function drawCard(card, pos, inHand, refIds, fullDeck, container) {
-        const el = document.createElement('div'); const cIdx = pos - 1, rIdx = refIds.indexOf(card.id);
+    function drawCard(card, absIdx, inHand, refIds, fullDeck, container, mateMap) {
+        const el = document.createElement('div'); const rIdx = refIds.indexOf(card.id);
         let cls = `card ${card.faceUp ? '' : 'face-down'} ${inHand ? 'in-hand-highlight' : ''}`;
+        
         if (card.faceUp) {
             const m = card.label.match(/^(\d+|[AJQK])([SHCD])$/);
-            if (m) { cls += ` suit-${m[2]}`; el.innerHTML = `<div class="rank-badge" style="background-color:${getRankColor(m[1])}"></div><span class="rank-label">${card.label}</span>`; }
-            else { const key = card.label.toLowerCase(); el.style.backgroundColor = `hsl(${50 + (Math.abs(hash(key)) % 270)}, 50%, 92%)`; el.innerHTML = `<div class="rank-badge" style="background-color:${getRankColor(key)}"></div><span class="rank-label">${card.label}</span>`; }
+            const isMateHighlighted = mateMap.has(absIdx);
+            const badgeCls = `rank-badge ${isMateHighlighted ? 'mate-badge-active' : ''}`;
+            
+            if (m) {
+                cls += ` suit-${m[2]}`;
+                el.innerHTML = `<div class="${badgeCls}" style="background-color:${getRankColor(m[1])}"></div><span class="rank-label">${card.label}</span>`;
+            } else {
+                const key = card.label.toLowerCase();
+                el.style.backgroundColor = `hsl(${50 + (Math.abs(hash(key)) % 270)}, 50%, 92%)`;
+                el.innerHTML = `<div class="${badgeCls}" style="background-color:${getRankColor(key)}"></div><span class="rank-label">${card.label}</span>`;
+            }
         }
+        
         if (rIdx !== -1) {
-            let next = (cIdx < fullDeck.length - 1 && refIds[rIdx + 1] === fullDeck[cIdx + 1].id);
-            let prev = (cIdx > 0 && refIds[rIdx - 1] === fullDeck[cIdx - 1].id);
+            let next = (absIdx < fullDeck.length - 1 && refIds[rIdx + 1] === fullDeck[absIdx + 1].id);
+            let prev = (absIdx > 0 && refIds[rIdx - 1] === fullDeck[absIdx - 1].id);
             if (next || prev) cls += ' slug-active'; if (next) cls += ' slug-next'; if (prev) cls += ' slug-prev';
         }
-        el.className = cls; const posEl = document.createElement('div'); posEl.className = 'card-pos'; posEl.innerText = pos; el.appendChild(posEl);
-        el.onclick = (e) => { saveState(); if (e.shiftKey) { const d = [...piles[activePileIdx].deck]; d.splice(pos-1, 1); piles[activePileIdx].deck = d; } else { card.faceUp = !card.faceUp; } render(); };
+        el.className = cls; const posEl = document.createElement('div'); posEl.className = 'card-pos'; posEl.innerText = absIdx + 1; el.appendChild(posEl);
+        el.onclick = (e) => { saveState(); if (e.shiftKey) { const d = [...piles[activePileIdx].deck]; d.splice(absIdx, 1); piles[activePileIdx].deck = d; } else { card.faceUp = !card.faceUp; } render(); };
         container.appendChild(el);
     }
     function getRankColor(r) { let h = Math.abs(hash(r.toLowerCase())) % 360; return `hsla(${h}, 70%, 50%, 0.15)`; }
