@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShuffleSim v2.5</title>
+    <title>ShuffleSim v2.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
@@ -16,27 +16,20 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-            background-color: var(--mac-bg);
-            color: #1C1C1E;
-            margin: 0; padding: 0; overflow: hidden;
+            background-color: var(--mac-bg); color: #1C1C1E; margin: 0; padding: 0; overflow: hidden;
         }
 
-        /* レイアウト */
         .app-layout { display: flex; flex-direction: column; height: 100vh; }
         @media (min-width: 1024px) { .app-layout { flex-direction: row; } }
 
         aside { 
-            background-color: var(--mac-sidebar); 
-            border-bottom: 1px solid var(--mac-border);
+            background-color: var(--mac-sidebar); border-bottom: 1px solid var(--mac-border);
             height: 48vh; overflow-y: auto; flex-shrink: 0; z-index: 20; padding: 12px;
         }
-        @media (min-width: 1024px) { 
-            aside { width: 340px; height: 100vh; border-bottom: none; border-right: 1px solid var(--mac-border); padding: 20px; } 
-        }
+        @media (min-width: 1024px) { aside { width: 340px; height: 100vh; border-bottom: none; border-right: 1px solid var(--mac-border); padding: 20px; } }
 
         main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #FFFFFF; }
 
-        /* カードデザイン */
         .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 12px; padding: 0 10px; }
         @media (min-width: 768px) { .card-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 14px; padding: 0; } }
 
@@ -44,29 +37,28 @@
             aspect-ratio: 2/3; display: flex; flex-direction: column; align-items: center; justify-content: center;
             border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: grab;
             background: #FFFFFF; border: 0.5px solid rgba(0,0,0,0.15); box-shadow: 0 1px 2px rgba(0,0,0,0.04); position: relative;
+            overflow: hidden;
         }
-        .card-pos { position: absolute; bottom: 4px; right: 6px; font-size: 0.55rem; font-weight: 900; color: #AEAEB2; }
+        .card-pos { position: absolute; bottom: 3px; right: 5px; font-size: 0.5rem; font-weight: 900; color: #8E8E93; z-index: 5; }
         
-        /* 裏面デザインの修正 (Appleロゴ廃止 → 幾何学パターン) */
+        /* スート別カラーバー */
+        .suit-bar { position: absolute; top: 0; left: 0; width: 100%; height: 4px; }
+
         .card.face-down { 
-            background-color: #1C1C1E !important; 
-            border: none; 
-            background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 0);
-            background-size: 4px 4px;
+            background-color: #1C1C1E !important; border: none; 
+            background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 0); background-size: 4px 4px;
         }
         .card.face-down::before { 
-            content: "S"; 
-            color: rgba(255,255,255,0.15); 
-            font-size: 1rem; 
-            font-weight: 900;
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
+            content: "S"; color: rgba(255,255,255,0.15); font-size: 1rem; font-weight: 900;
+            border: 1px solid rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 4px;
         }
 
-        .text-red-suit { color: #FF3B30 !important; }
+        /* スート別テキスト色 */
+        .txt-S { color: #1e293b; } /* Spades */
+        .txt-C { color: #065f46; } /* Clubs */
+        .txt-H { color: #be123c; } /* Hearts */
+        .txt-D { color: #b45309; } /* Diamonds */
 
-        /* UIパーツ */
         .control-group { background: rgba(255,255,255,0.6); border-radius: 12px; padding: 12px; margin-bottom: 16px; border: 0.5px solid rgba(0,0,0,0.05); }
         .section-label { font-size: 0.65rem; font-weight: 800; color: #8E8E93; text-transform: uppercase; margin-bottom: 8px; display: block; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px; }
         
@@ -75,9 +67,9 @@
         button.primary { border: none; color: white; background-color: var(--mac-blue); }
         
         .custom-preset-item { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
-        .del-btn { width: 24px; height: 24px; padding: 0; background: #FF3B30; color: white; border: none; border-radius: 50%; font-size: 12px; }
+        .del-btn { width: 22px; height: 22px; padding: 0; background: #FF3B30; color: white; border: none; border-radius: 50%; font-size: 10px; flex-shrink: 0; }
         
-        .stats-tag { font-size: 0.7rem; font-weight: 700; color: #48484A; background: #FFFFFF; padding: 3px 12px; border-radius: 20px; border: 0.5px solid var(--mac-border); }
+        .stats-tag { font-size: 0.65rem; font-weight: 700; color: #48484A; background: #FFFFFF; padding: 3px 10px; border-radius: 20px; border: 0.5px solid var(--mac-border); }
         .in-hand-highlight { border: 2px solid var(--mac-blue) !important; background: #F0F7FF !important; }
         .area-label { font-size: 0.6rem; font-weight: 900; color: var(--mac-blue); margin-bottom: 10px; text-transform: uppercase; border-left: 4px solid var(--mac-blue); padding-left: 8px; }
     </style>
@@ -85,9 +77,9 @@
 <body>
 
 <div class="app-layout">
-    <aside>
+    <aside id="sidebar">
         <div class="flex justify-between items-center mb-5 lg:mb-10">
-            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v2.5</h1>
+            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v2.8</h1>
             <div class="flex gap-2 w-auto">
                 <button onclick="undo()" style="width: auto;">Undo</button>
                 <button onclick="redo()" style="width: auto;">Redo</button>
@@ -101,14 +93,12 @@
                 <button onclick="applyPreset('ndo')">NDO</button>
                 <button onclick="applyPreset('mnemonica')">Mnem</button>
             </div>
-            
             <div id="customPresetList" class="mb-3"></div>
-
             <div class="space-y-2 border-t pt-3 border-gray-200">
-                <textarea id="customInput" rows="1" placeholder="ラベル名 (コンマ/スペース区切り)"></textarea>
+                <textarea id="customInput" rows="1" placeholder="AS, 2S, 3Hv..."></textarea>
                 <div class="flex gap-2">
-                    <input type="text" id="stackName" placeholder="保存時の名前" class="flex-1">
-                    <button onclick="saveCurrentStack()" class="primary w-24 text-[0.7rem]">並びを保存</button>
+                    <input type="text" id="stackName" placeholder="保存名" class="flex-1">
+                    <button onclick="saveCurrentStack()" class="primary w-24 text-[0.7rem]">並び保存</button>
                 </div>
                 <button onclick="applyCustom()" class="bg-gray-100 font-bold border-gray-300">テキスト適用</button>
             </div>
@@ -134,8 +124,8 @@
                 <select id="riffleSplit" onchange="toggleRiffleField()"><option value="jitter">ランダム分け</option><option value="fixed">枚数指定</option></select>
                 <input type="number" id="riffleFixed" value="26" class="hidden">
                 <div class="flex gap-2">
-                    <input type="number" id="chunkMax" value="3" title="噛み合わせ最大">
-                    <input type="number" id="rifflePasses" value="1" title="回数">
+                    <input type="number" id="chunkMax" value="3" placeholder="噛み合わせ">
+                    <input type="number" id="rifflePasses" value="1" placeholder="回数">
                 </div>
             </div>
             <button class="primary bg-green-600" onclick="opRiffle()">リフル実行</button>
@@ -161,11 +151,11 @@
     </aside>
 
     <main>
-        <div class="h-12 px-6 border-b border-gray-100 flex items-center justify-between bg-white/80 sticky top-0 z-10 backdrop-blur-sm">
+        <div class="h-10 px-6 border-b border-gray-100 flex items-center justify-between bg-white/80 sticky top-0 z-10 backdrop-blur-sm">
             <div id="statsBar" class="flex gap-3"></div>
-            <button onclick="copyDeckText()" class="text-[11px] font-bold text-blue-500 w-auto border-none">並びをコピー</button>
+            <button onclick="copyDeckText()" class="text-[10px] font-bold text-blue-500 w-auto border-none p-0">並びをコピー</button>
         </div>
-        <div class="flex-1 overflow-y-auto p-6 lg:p-12 bg-[#FAFAFA]">
+        <div class="flex-1 overflow-y-auto px-6 py-6 lg:px-12 bg-[#FAFAFA]" id="mainScroll">
             <div id="handArea" class="mb-10 hidden"><div class="area-label">移動した山 (Hand)</div><div id="handDisplay" class="card-grid"></div></div>
             <div id="deckArea"><div class="area-label" id="deckAreaLabel">現在の山 (Deck)</div><div id="deckDisplay" class="card-grid"></div></div>
         </div>
@@ -177,6 +167,13 @@
     let piles = Array.from({length: 4}, (_, i) => ({ name: String.fromCharCode(65 + i), deck: [], undoStack: [], redoStack: [], tempHand: [] }));
     let sortableInstance = null;
 
+    const COLORS = {
+        S: { bg: '#f1f5f9', bar: '#475569', txt: 'txt-S' }, // Spades (Slate)
+        H: { bg: '#fff1f2', bar: '#e11d48', txt: 'txt-H' }, // Hearts (Rose)
+        C: { bg: '#ecfdf5', bar: '#10b981', txt: 'txt-C' }, // Clubs (Emerald)
+        D: { bg: '#fffbeb', bar: '#f59e0b', txt: 'txt-D' }  // Diamonds (Amber)
+    };
+
     function getCustomPresets() { return JSON.parse(localStorage.getItem('shufflesim_custom_stacks') || '{}'); }
     function saveCustomPreset(name, str) { const p = getCustomPresets(); p[name] = str; localStorage.setItem('shufflesim_custom_stacks', JSON.stringify(p)); renderPresetsUI(); }
     function deleteCustomPreset(name) { const p = getCustomPresets(); delete p[name]; localStorage.setItem('shufflesim_custom_stacks', JSON.stringify(p)); renderPresetsUI(); }
@@ -185,72 +182,100 @@
         list.innerHTML = Object.keys(p).length > 0 ? '<p class="text-[0.55rem] text-gray-400 font-bold mb-1">Custom Stacks:</p>' : '';
         for (const n in p) {
             const row = document.createElement('div'); row.className = 'custom-preset-item';
-            row.innerHTML = `<button onclick="applyStackString('${p[n]}')" class="text-[0.7rem] bg-white border-gray-200 text-left truncate flex-1">${n}</button><button onclick="deleteCustomPreset('${n}')" class="del-btn">×</button>`;
-            list.appendChild(row);
+            const applyBtn = document.createElement('button'); applyBtn.className = 'text-[0.7rem] bg-white border-gray-200 text-left truncate flex-1';
+            applyBtn.innerText = n; applyBtn.onclick = () => applyStackString(p[n]);
+            const delBtn = document.createElement('button'); delBtn.className = 'del-btn'; delBtn.innerText = '×'; delBtn.onclick = () => deleteCustomPreset(n);
+            row.appendChild(applyBtn); row.appendChild(delBtn); list.appendChild(row);
         }
     }
     function saveCurrentStack() {
-        const name = document.getElementById('stackName').value.trim(); if (!name) return alert("名前を入力してください");
+        const nameInput = document.getElementById('stackName'); const name = nameInput.value.trim(); if (!name) return alert("名前を入力してください");
         const full = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck];
-        const str = full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' '); saveCustomPreset(name, str); document.getElementById('stackName').value = '';
+        const str = full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' '); saveCustomPreset(name, str); nameInput.value = '';
     }
 
     function toggleRiffleField() { document.getElementById('riffleFixed').classList.toggle('hidden', document.getElementById('riffleSplit').value === 'jitter'); }
     function saveState() { const p = piles[activePileIdx]; p.undoStack.push(JSON.parse(JSON.stringify(p.deck))); if (p.undoStack.length > 200) p.undoStack.shift(); p.redoStack = []; }
     function undo() { const p = piles[activePileIdx]; if (p.undoStack.length === 0) return; p.redoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.undoStack.pop(); p.tempHand = []; render(); }
     function redo() { const p = piles[activePileIdx]; if (p.redoStack.length === 0) return; p.undoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.redoStack.pop(); render(); }
-    function getPairKey(label) { return label.toLowerCase(); }
-    function getColorFromKey(key) { let h = 0; for (let i = 0; i < key.length; i++) h = key.charCodeAt(i) + ((h << 5) - h); return `hsl(${50 + (Math.abs(h) % 270)}, 45%, 96%)`; }
-
+    
     function opOverhandStep() {
         const p = piles[activePileIdx]; if (p.deck.length === 0) return; if (p.tempHand.length === 0) saveState();
-        let n = Math.floor(Math.random() * (parseInt(document.getElementById('ohMax').value) - parseInt(document.getElementById('ohMin').value) + 1)) + parseInt(document.getElementById('ohMin').value);
-        p.tempHand = [...p.deck.splice(0, Math.min(n, p.deck.length)), ...p.tempHand]; render();
+        const min = parseInt(document.getElementById('ohMin').value) || 1; const max = parseInt(document.getElementById('ohMax').value) || 6;
+        let n = Math.floor(Math.random() * (max - min + 1)) + min; p.tempHand = [...p.deck.splice(0, Math.min(n, p.deck.length)), ...p.tempHand]; render();
     }
     function opOverhandFinish() {
         const p = piles[activePileIdx]; if (p.deck.length === 0 && p.tempHand.length === 0) return; saveState();
+        const min = parseInt(document.getElementById('ohMin').value) || 1; const max = parseInt(document.getElementById('ohMax').value) || 6;
         let wd = [...p.deck], wh = [...p.tempHand];
-        while (wd.length > 0) { let n = Math.floor(Math.random() * (parseInt(ohMax.value)-parseInt(ohMin.value)+1))+parseInt(ohMin.value); wh = [...wd.splice(0, Math.min(n, wd.length)), ...wh]; }
+        while (wd.length > 0) { let n = Math.floor(Math.random() * (max - min + 1)) + min; wh = [...wd.splice(0, Math.min(n, wd.length)), ...wh]; }
         p.deck = wh; p.tempHand = []; render();
     }
     function opRiffle() {
         const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
-        for (let ps = 0; ps < parseInt(rifflePasses.value); ps++) {
+        const passes = parseInt(document.getElementById('rifflePasses').value) || 1; const cMax = parseInt(document.getElementById('chunkMax').value) || 3;
+        for (let ps = 0; ps < passes; ps++) {
             let cp = Math.floor(p.deck.length/2) + Math.floor(Math.random() * 7) - 3;
             let L = p.deck.slice(0, cp), R = p.deck.slice(cp), res = [];
-            while (L.length > 0 || R.length > 0) { let s = (L.length > 0 && R.length > 0) ? (Math.random() < 0.5 ? L : R) : (L.length > 0 ? L : R); res.push(...s.splice(0, Math.floor(Math.random() * parseInt(chunkMax.value)) + 1)); }
+            while (L.length > 0 || R.length > 0) { let s = (L.length > 0 && R.length > 0) ? (Math.random() < 0.5 ? L : R) : (L.length > 0 ? L : R); res.push(...s.splice(0, Math.floor(Math.random() * cMax) + 1)); }
             p.deck = res;
         } render();
     }
     function opFaro() {
         const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
-        let split = parseInt(faroSplit.value), A = p.deck.slice(0, split), B = p.deck.slice(split);
-        let f = (faroMode.value === 'out') ? A : B, s = (faroMode.value === 'out') ? B : A, res = [];
-        let r1 = (faroRatio.value === '1-1' ? 1 : 2), r2 = (faroRatio.value === '2-2' ? 2 : 1);
+        const split = parseInt(document.getElementById('faroSplit').value) || 26;
+        const mode = document.getElementById('faroMode').value; const ratio = document.getElementById('faroRatio').value;
+        let A = p.deck.slice(0, split), B = p.deck.slice(split);
+        let f = (mode === 'out') ? A : B, s = (mode === 'out') ? B : A, res = [];
+        let r1 = (ratio === '1-1' ? 1 : 2), r2 = (ratio === '2-2' ? 2 : 1);
         while (f.length > 0 || s.length > 0) { if (f.length > 0) res.push(...f.splice(0, r1)); if (s.length > 0) res.push(...s.splice(0, r2)); }
         p.deck = res; render();
     }
-    function opCut() { saveState(); const d = piles[activePileIdx].deck; if (d.length === 0) return; let n = parseInt(cutN.value) % d.length; piles[activePileIdx].deck = [...d.slice(n), ...d.slice(0, n)]; render(); }
+    function opCut() { const p = piles[activePileIdx]; if (p.deck.length === 0) return; saveState(); let n = parseInt(document.getElementById('cutN').value) % p.deck.length; p.deck = [...p.deck.slice(n), ...p.deck.slice(0, n)]; render(); }
 
     function render() {
         const p = piles[activePileIdx]; const full = [...p.tempHand, ...p.deck];
-        let adj = 0; for (let i = 1; i < full.length; i++) { if (getPairKey(full[i].label) === getPairKey(full[i-1].label)) adj++; }
-        statsBar.innerHTML = `<span class="stats-tag">ペア: ${adj}</span><span class="stats-tag">枚数: ${full.length}</span>`;
-        handArea.classList.toggle('hidden', p.tempHand.length === 0);
-        handDisplay.innerHTML = ''; p.tempHand.forEach((c, i) => handDisplay.appendChild(createCardEl(c, i + 1, true)));
-        deckDisplay.innerHTML = ''; p.deck.forEach((c, i) => deckDisplay.appendChild(createCardEl(c, p.tempHand.length + i + 1, false)));
+        let adj = 0; for (let i = 1; i < full.length; i++) { if (isMate(full[i].label, full[i-1].label)) adj++; }
+        document.getElementById('statsBar').innerHTML = `<span class="stats-tag">隣接メイト: ${adj}</span><span class="stats-tag">枚数: ${full.length}</span>`;
+        document.getElementById('handArea').classList.toggle('hidden', p.tempHand.length === 0);
+        const hd = document.getElementById('handDisplay'); hd.innerHTML = ''; p.tempHand.forEach((c, i) => hd.appendChild(createCardEl(c, i + 1, true)));
+        const dd = document.getElementById('deckDisplay'); dd.innerHTML = ''; p.deck.forEach((c, i) => dd.appendChild(createCardEl(c, p.tempHand.length + i + 1, false)));
         if (sortableInstance) sortableInstance.destroy();
-        sortableInstance = Sortable.create(deckDisplay, { animation: 150, onEnd: function (e) {
+        sortableInstance = Sortable.create(dd, { animation: 150, onEnd: function (e) {
             saveState(); const d = [...p.tempHand, ...p.deck]; const item = d.splice(e.oldIndex + p.tempHand.length, 1)[0]; d.splice(e.newIndex + p.tempHand.length, 0, item); p.tempHand = []; p.deck = d; render();
         }});
+    }
+
+    function isMate(l1, l2) {
+        if (!l1 || !l2) return false;
+        const m1 = l1.match(/^(\d+|[AJQK])([SHCD])$/);
+        const m2 = l2.match(/^(\d+|[AJQK])([SHCD])$/);
+        if (m1 && m2) {
+            const sameRank = m1[1] === m2[1];
+            const color1 = (m1[2] === 'S' || m1[2] === 'C') ? 'B' : 'R';
+            const color2 = (m2[2] === 'S' || m2[2] === 'C') ? 'B' : 'R';
+            return sameRank && color1 === color2;
+        }
+        return l1.toLowerCase() === l2.toLowerCase();
     }
 
     function createCardEl(card, pos, inHand) {
         const el = document.createElement('div'); el.className = `card ${card.faceUp ? '' : 'face-down'} ${inHand ? 'in-hand-highlight' : ''}`;
         const posEl = document.createElement('div'); posEl.className = 'card-pos'; posEl.innerText = pos; el.appendChild(posEl);
+        
         if (card.faceUp) {
-            el.style.backgroundColor = getColorFromKey(getPairKey(card.label));
-            const span = document.createElement('span'); span.innerText = card.label; if (/^(?:[AJQK1-9]|10)[HD]$/.test(card.label)) span.classList.add('text-red-suit'); el.appendChild(span);
+            const match = card.label.match(/^(\d+|[AJQK])([SHCD])$/);
+            if (match) {
+                const config = COLORS[match[2]];
+                el.style.backgroundColor = config.bg;
+                el.classList.add(config.txt);
+                const bar = document.createElement('div'); bar.className = 'suit-bar'; bar.style.backgroundColor = config.bar; el.appendChild(bar);
+            } else {
+                // ペア用カラーハッシュ
+                let h = 0; const key = card.label.toLowerCase(); for(let i=0; i<key.length; i++) h = key.charCodeAt(i) + ((h << 5) - h);
+                el.style.backgroundColor = `hsl(${50 + (Math.abs(h) % 270)}, 45%, 96%)`;
+            }
+            const span = document.createElement('span'); span.innerText = card.label; el.appendChild(span);
         }
         el.onclick = (e) => { saveState(); if (e.shiftKey) { const d = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; d.splice(pos - 1, 1); piles[activePileIdx].tempHand = []; piles[activePileIdx].deck = d; } else { card.faceUp = !card.faceUp; } render(); };
         return el;
@@ -258,7 +283,12 @@
 
     function applyStackString(str) {
         saveState(); const tokens = str.split(/[\s,]+/).filter(t => t);
-        piles[activePileIdx].deck = tokens.map(t => ({ label: t.replace(/[v*↓]$/,''), faceUp: !/[v*↓]$/.test(t), id: Math.random() }));
+        piles[activePileIdx].deck = tokens.map(t => {
+            let faceUp = true; let label = t;
+            if (t.length > 1 && /[v*↓]$/.test(t)) { faceUp = false; label = t.slice(0, -1); }
+            else if (t === '*' || t === '↓') { faceUp = false; label = ''; }
+            return { label, faceUp, id: Math.random() };
+        });
         piles[activePileIdx].tempHand = []; render();
     }
 
@@ -269,9 +299,11 @@
     }
 
     function applyCustom() {
-        const val = customInput.value.trim(); if (!val) return;
-        if (!isNaN(val)) { saveState(); piles[activePileIdx].deck = Array.from({length: parseInt(val)}, (_, i) => ({ label: String(i+1), faceUp: true, id: Math.random() })); piles[activePileIdx].tempHand = []; render(); }
-        else applyStackString(val); customInput.value = '';
+        const input = document.getElementById('customInput'); const val = input.value.trim(); if (!val) return;
+        if (!isNaN(val)) {
+            saveState(); piles[activePileIdx].deck = Array.from({length: parseInt(val)}, (_, i) => ({ label: String(i+1), faceUp: true, id: Math.random() }));
+            piles[activePileIdx].tempHand = []; render();
+        } else applyStackString(val); input.value = '';
     }
 
     function copyDeckText() { const full = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; navigator.clipboard.writeText(full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ')); alert("コピーしました"); }
