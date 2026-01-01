@@ -3,99 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShuffleSim v2.8</title>
+    <title>ShuffleSim v3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
-        :root {
-            --mac-bg: #F2F2F7;
-            --mac-sidebar: #E5E5EA;
-            --mac-border: #D1D1D6;
-            --mac-blue: #007AFF;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-            background-color: var(--mac-bg); color: #1C1C1E; margin: 0; padding: 0; overflow: hidden;
-        }
-
+        :root { --mac-bg: #F2F2F7; --mac-sidebar: #E5E5EA; --mac-border: #D1D1D6; --mac-blue: #007AFF; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; background-color: var(--mac-bg); color: #1C1C1E; margin: 0; padding: 0; overflow: hidden; }
         .app-layout { display: flex; flex-direction: column; height: 100vh; }
         @media (min-width: 1024px) { .app-layout { flex-direction: row; } }
-
-        aside { 
-            background-color: var(--mac-sidebar); border-bottom: 1px solid var(--mac-border);
-            height: 48vh; overflow-y: auto; flex-shrink: 0; z-index: 20; padding: 12px;
-        }
+        aside { background-color: var(--mac-sidebar); border-bottom: 1px solid var(--mac-border); height: 48vh; overflow-y: auto; flex-shrink: 0; z-index: 20; padding: 12px; }
         @media (min-width: 1024px) { aside { width: 340px; height: 100vh; border-bottom: none; border-right: 1px solid var(--mac-border); padding: 20px; } }
-
         main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #FFFFFF; }
-
         .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 12px; padding: 0 10px; }
         @media (min-width: 768px) { .card-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 14px; padding: 0; } }
-
-        .card {
-            aspect-ratio: 2/3; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: grab;
-            background: #FFFFFF; border: 0.5px solid rgba(0,0,0,0.15); box-shadow: 0 1px 2px rgba(0,0,0,0.04); position: relative;
-            overflow: hidden;
-        }
-        .card-pos { position: absolute; bottom: 3px; right: 5px; font-size: 0.5rem; font-weight: 900; color: #8E8E93; z-index: 5; }
+        .card { aspect-ratio: 2/3; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: grab; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 1px 2px rgba(0,0,0,0.04); position: relative; overflow: hidden; }
+        /* スラグ・ハイライト：基準と連続している場合に青い枠をつける */
+        .slug-next { border-right: 4px solid var(--mac-blue) !important; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+        .slug-prev { border-left: 4px solid var(--mac-blue) !important; border-top-left-radius: 0; border-bottom-left-radius: 0; }
         
-        /* スート別カラーバー */
+        .card-pos { position: absolute; bottom: 3px; right: 5px; font-size: 0.5rem; font-weight: 900; color: #8E8E93; z-index: 5; }
         .suit-bar { position: absolute; top: 0; left: 0; width: 100%; height: 4px; }
-
-        .card.face-down { 
-            background-color: #1C1C1E !important; border: none; 
-            background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 0); background-size: 4px 4px;
-        }
-        .card.face-down::before { 
-            content: "S"; color: rgba(255,255,255,0.15); font-size: 1rem; font-weight: 900;
-            border: 1px solid rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 4px;
-        }
-
-        /* スート別テキスト色 */
-        .txt-S { color: #1e293b; } /* Spades */
-        .txt-C { color: #065f46; } /* Clubs */
-        .txt-H { color: #be123c; } /* Hearts */
-        .txt-D { color: #b45309; } /* Diamonds */
-
+        .card.face-down { background-color: #1C1C1E !important; border: none; background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 0); background-size: 4px 4px; }
+        .card.face-down::before { content: "S"; color: rgba(255,255,255,0.15); font-size: 1rem; font-weight: 900; border: 1px solid rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 4px; }
+        .txt-S { color: #1e293b; } .txt-C { color: #065f46; } .txt-H { color: #be123c; } .txt-D { color: #b45309; }
         .control-group { background: rgba(255,255,255,0.6); border-radius: 12px; padding: 12px; margin-bottom: 16px; border: 0.5px solid rgba(0,0,0,0.05); }
         .section-label { font-size: 0.65rem; font-weight: 800; color: #8E8E93; text-transform: uppercase; margin-bottom: 8px; display: block; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px; }
-        
         input, select, textarea { background: #FFFFFF; border: 1px solid var(--mac-border); border-radius: 6px; padding: 5px 8px; font-size: 0.8rem; outline: none; width: 100%; }
         button { font-size: 0.8rem; font-weight: 600; padding: 7px 10px; border-radius: 8px; background: #FFFFFF; border: 1px solid var(--mac-border); transition: 0.1s; width: 100%; cursor: pointer; }
         button.primary { border: none; color: white; background-color: var(--mac-blue); }
-        
-        .custom-preset-item { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
         .del-btn { width: 22px; height: 22px; padding: 0; background: #FF3B30; color: white; border: none; border-radius: 50%; font-size: 10px; flex-shrink: 0; }
-        
-        .stats-tag { font-size: 0.65rem; font-weight: 700; color: #48484A; background: #FFFFFF; padding: 3px 10px; border-radius: 20px; border: 0.5px solid var(--mac-border); }
+        .stats-tag { font-size: 0.62rem; font-weight: 700; color: #48484A; background: #FFFFFF; padding: 2px 8px; border-radius: 20px; border: 0.5px solid var(--mac-border); white-space: nowrap; }
         .in-hand-highlight { border: 2px solid var(--mac-blue) !important; background: #F0F7FF !important; }
         .area-label { font-size: 0.6rem; font-weight: 900; color: var(--mac-blue); margin-bottom: 10px; text-transform: uppercase; border-left: 4px solid var(--mac-blue); padding-left: 8px; }
     </style>
 </head>
 <body>
-
 <div class="app-layout">
     <aside id="sidebar">
         <div class="flex justify-between items-center mb-5 lg:mb-10">
-            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v2.8</h1>
+            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v3.0</h1>
             <div class="flex gap-2 w-auto">
                 <button onclick="undo()" style="width: auto;">Undo</button>
                 <button onclick="redo()" style="width: auto;">Redo</button>
             </div>
         </div>
-
         <div class="control-group">
-            <h2 class="section-label">スタック・プリセット</h2>
-            <div class="grid grid-cols-3 gap-2 mb-3">
-                <button onclick="applyPreset('pairAa')">ペア</button>
-                <button onclick="applyPreset('ndo')">NDO</button>
-                <button onclick="applyPreset('mnemonica')">Mnem</button>
+            <h2 class="section-label">スタック & 基準設定</h2>
+            <div class="grid grid-cols-2 gap-2 mb-3">
+                <button onclick="applyPreset('ndo')" class="text-[0.7rem]">NDO</button>
+                <button onclick="applyPreset('mnemonica')" class="text-[0.7rem]">Mnemonica</button>
+                <button onclick="setReference()" class="col-span-2 primary">現在の並びを基準に設定</button>
             </div>
             <div id="customPresetList" class="mb-3"></div>
             <div class="space-y-2 border-t pt-3 border-gray-200">
-                <textarea id="customInput" rows="1" placeholder="AS, 2S, 3Hv..."></textarea>
+                <textarea id="customInput" rows="1" placeholder="Q W E R T..."></textarea>
                 <div class="flex gap-2">
                     <input type="text" id="stackName" placeholder="保存名" class="flex-1">
                     <button onclick="saveCurrentStack()" class="primary w-24 text-[0.7rem]">並び保存</button>
@@ -103,57 +64,40 @@
                 <button onclick="applyCustom()" class="bg-gray-100 font-bold border-gray-300">テキスト適用</button>
             </div>
         </div>
-
         <div class="control-group">
             <h2 class="section-label text-blue-600">オーバーハンド</h2>
-            <div class="grid grid-cols-1 gap-3">
-                <div class="flex items-center gap-2">
-                    <input type="number" id="ohMin" value="1" class="text-center w-12"><span class="text-gray-300">~</span>
-                    <input type="number" id="ohMax" value="6" class="text-center w-12"><span class="text-[0.6rem] font-bold text-gray-400">枚</span>
-                </div>
-                <div class="flex gap-2">
-                    <button class="primary bg-blue-600" onclick="opOverhandStep()">1束剥ぐ</button>
-                    <button onclick="opOverhandFinish()">1周終える</button>
-                </div>
+            <div class="flex gap-2 mb-3 items-center">
+                <input type="number" id="ohMin" value="1" class="text-center w-12"><span class="text-gray-300">~</span>
+                <input type="number" id="ohMax" value="6" class="text-center w-12">
+                <button class="primary bg-blue-600" onclick="opOverhandStep()">1束剥ぐ</button>
             </div>
+            <button onclick="opOverhandFinish()">最後まで剥ぐ（1周）</button>
         </div>
-
         <div class="control-group">
             <h2 class="section-label text-green-600">リフル</h2>
-            <div class="grid grid-cols-1 gap-2 mb-2">
-                <select id="riffleSplit" onchange="toggleRiffleField()"><option value="jitter">ランダム分け</option><option value="fixed">枚数指定</option></select>
-                <input type="number" id="riffleFixed" value="26" class="hidden">
-                <div class="flex gap-2">
-                    <input type="number" id="chunkMax" value="3" placeholder="噛み合わせ">
-                    <input type="number" id="rifflePasses" value="1" placeholder="回数">
-                </div>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <select id="riffleSplit" onchange="toggleRiffleField()" class="col-span-2"><option value="jitter">ランダム分け</option><option value="fixed">枚数指定</option></select>
+                <input type="number" id="riffleFixed" value="26" class="hidden col-span-2">
+                <input type="number" id="chunkMax" value="3" placeholder="噛み合わせ">
+                <input type="number" id="rifflePasses" value="1" placeholder="回数">
             </div>
             <button class="primary bg-green-600" onclick="opRiffle()">リフル実行</button>
+            <div id="riffleLog" class="text-[10px] text-green-700 font-bold mt-2 text-center h-3"></div>
         </div>
-
         <div class="control-group">
-            <h2 class="section-label text-indigo-600">アドバンスド・ファロー</h2>
+            <h2 class="section-label text-indigo-600">ファロー & カット</h2>
             <div class="grid grid-cols-2 gap-2 mb-2">
                 <select id="faroMode"><option value="out">Out</option><option value="in">In</option></select>
-                <select id="faroRatio"><option value="1-1">1:1</option><option value="2-2">2:2</option><option value="2-1">2:1</option></select>
-                <input type="number" id="faroSplit" value="26" class="col-span-2">
-            </div>
-            <button class="primary bg-indigo-600" onclick="opFaro()">ファロー実行</button>
-        </div>
-
-        <div class="control-group">
-            <h2 class="section-label text-gray-600">カット</h2>
-            <div class="flex gap-2">
-                <input type="number" id="cutN" value="1">
-                <button class="primary bg-gray-600" onclick="opCut()">実行</button>
+                <select id="faroRatio"><option value="1-1">1:1</option><option value="2-1">2:1</option></select>
+                <button class="primary bg-indigo-600" onclick="opFaro()">Faro</button>
+                <div class="flex gap-1"><input type="number" id="cutN" value="1"><button onclick="opCut()" class="bg-gray-600 text-white border-none">Cut</button></div>
             </div>
         </div>
     </aside>
-
     <main>
-        <div class="h-10 px-6 border-b border-gray-100 flex items-center justify-between bg-white/80 sticky top-0 z-10 backdrop-blur-sm">
-            <div id="statsBar" class="flex gap-3"></div>
-            <button onclick="copyDeckText()" class="text-[10px] font-bold text-blue-500 w-auto border-none p-0">並びをコピー</button>
+        <div class="h-10 px-4 border-b border-gray-100 flex items-center justify-between bg-white/80 sticky top-0 z-10 backdrop-blur-sm overflow-hidden">
+            <div id="statsBar" class="flex gap-1 overflow-x-auto items-center no-scrollbar"></div>
+            <button onclick="copyDeckText()" class="text-[10px] font-bold text-blue-500 flex-shrink-0 ml-2">コピー</button>
         </div>
         <div class="flex-1 overflow-y-auto px-6 py-6 lg:px-12 bg-[#FAFAFA]" id="mainScroll">
             <div id="handArea" class="mb-10 hidden"><div class="area-label">移動した山 (Hand)</div><div id="handDisplay" class="card-grid"></div></div>
@@ -161,25 +105,18 @@
         </div>
     </main>
 </div>
-
 <script>
     let activePileIdx = 0;
-    let piles = Array.from({length: 4}, (_, i) => ({ name: String.fromCharCode(65 + i), deck: [], undoStack: [], redoStack: [], tempHand: [] }));
+    let piles = Array.from({length: 4}, (_, i) => ({ name: String.fromCharCode(65 + i), deck: [], undoStack: [], redoStack: [], tempHand: [], referenceIds: [] }));
     let sortableInstance = null;
-
-    const COLORS = {
-        S: { bg: '#f1f5f9', bar: '#475569', txt: 'txt-S' }, // Spades (Slate)
-        H: { bg: '#fff1f2', bar: '#e11d48', txt: 'txt-H' }, // Hearts (Rose)
-        C: { bg: '#ecfdf5', bar: '#10b981', txt: 'txt-C' }, // Clubs (Emerald)
-        D: { bg: '#fffbeb', bar: '#f59e0b', txt: 'txt-D' }  // Diamonds (Amber)
-    };
+    const COLORS = { S: { bg: '#f1f5f9', bar: '#475569', txt: 'txt-S' }, H: { bg: '#fff1f2', bar: '#e11d48', txt: 'txt-H' }, C: { bg: '#ecfdf5', bar: '#10b981', txt: 'txt-C' }, D: { bg: '#fffbeb', bar: '#f59e0b', txt: 'txt-D' } };
 
     function getCustomPresets() { return JSON.parse(localStorage.getItem('shufflesim_custom_stacks') || '{}'); }
     function saveCustomPreset(name, str) { const p = getCustomPresets(); p[name] = str; localStorage.setItem('shufflesim_custom_stacks', JSON.stringify(p)); renderPresetsUI(); }
     function deleteCustomPreset(name) { const p = getCustomPresets(); delete p[name]; localStorage.setItem('shufflesim_custom_stacks', JSON.stringify(p)); renderPresetsUI(); }
     function renderPresetsUI() {
         const list = document.getElementById('customPresetList'); const p = getCustomPresets();
-        list.innerHTML = Object.keys(p).length > 0 ? '<p class="text-[0.55rem] text-gray-400 font-bold mb-1">Custom Stacks:</p>' : '';
+        list.innerHTML = Object.keys(p).length > 0 ? '<p class="text-[0.55rem] text-gray-400 font-bold mb-1">Custom:</p>' : '';
         for (const n in p) {
             const row = document.createElement('div'); row.className = 'custom-preset-item';
             const applyBtn = document.createElement('button'); applyBtn.className = 'text-[0.7rem] bg-white border-gray-200 text-left truncate flex-1';
@@ -189,9 +126,9 @@
         }
     }
     function saveCurrentStack() {
-        const nameInput = document.getElementById('stackName'); const name = nameInput.value.trim(); if (!name) return alert("名前を入力してください");
+        const name = document.getElementById('stackName').value.trim(); if (!name) return alert("名前を入力");
         const full = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck];
-        const str = full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' '); saveCustomPreset(name, str); nameInput.value = '';
+        saveCustomPreset(name, full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ')); document.getElementById('stackName').value = '';
     }
 
     function toggleRiffleField() { document.getElementById('riffleFixed').classList.toggle('hidden', document.getElementById('riffleSplit').value === 'jitter'); }
@@ -199,83 +136,110 @@
     function undo() { const p = piles[activePileIdx]; if (p.undoStack.length === 0) return; p.redoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.undoStack.pop(); p.tempHand = []; render(); }
     function redo() { const p = piles[activePileIdx]; if (p.redoStack.length === 0) return; p.undoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.redoStack.pop(); render(); }
     
+    function setReference() {
+        const p = piles[activePileIdx]; const full = [...p.tempHand, ...p.deck];
+        p.referenceIds = full.map(c => c.id); render();
+    }
+
     function opOverhandStep() {
         const p = piles[activePileIdx]; if (p.deck.length === 0) return; if (p.tempHand.length === 0) saveState();
-        const min = parseInt(document.getElementById('ohMin').value) || 1; const max = parseInt(document.getElementById('ohMax').value) || 6;
-        let n = Math.floor(Math.random() * (max - min + 1)) + min; p.tempHand = [...p.deck.splice(0, Math.min(n, p.deck.length)), ...p.tempHand]; render();
+        let n = Math.floor(Math.random() * (parseInt(ohMax.value) - parseInt(ohMin.value) + 1)) + parseInt(ohMin.value);
+        p.tempHand = [...p.deck.splice(0, Math.min(n, p.deck.length)), ...p.tempHand]; render();
     }
     function opOverhandFinish() {
         const p = piles[activePileIdx]; if (p.deck.length === 0 && p.tempHand.length === 0) return; saveState();
-        const min = parseInt(document.getElementById('ohMin').value) || 1; const max = parseInt(document.getElementById('ohMax').value) || 6;
         let wd = [...p.deck], wh = [...p.tempHand];
-        while (wd.length > 0) { let n = Math.floor(Math.random() * (max - min + 1)) + min; wh = [...wd.splice(0, Math.min(n, wd.length)), ...wh]; }
+        while (wd.length > 0) { let n = Math.floor(Math.random() * (ohMax.value-ohMin.value+1))+parseInt(ohMin.value); wh = [...wd.splice(0, Math.min(n, wd.length)), ...wh]; }
         p.deck = wh; p.tempHand = []; render();
     }
     function opRiffle() {
         const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
-        const passes = parseInt(document.getElementById('rifflePasses').value) || 1; const cMax = parseInt(document.getElementById('chunkMax').value) || 3;
-        for (let ps = 0; ps < passes; ps++) {
-            let cp = Math.floor(p.deck.length/2) + Math.floor(Math.random() * 7) - 3;
-            let L = p.deck.slice(0, cp), R = p.deck.slice(cp), res = [];
-            while (L.length > 0 || R.length > 0) { let s = (L.length > 0 && R.length > 0) ? (Math.random() < 0.5 ? L : R) : (L.length > 0 ? L : R); res.push(...s.splice(0, Math.floor(Math.random() * cMax) + 1)); }
-            p.deck = res;
-        } render();
+        let cp = (riffleSplit.value === 'fixed') ? parseInt(riffleFixed.value) : Math.floor(p.deck.length/2) + Math.floor(Math.random() * 7) - 3;
+        let L = p.deck.slice(0, cp), R = p.deck.slice(cp), res = [];
+        while (L.length > 0 || R.length > 0) { let s = (L.length > 0 && R.length > 0) ? (Math.random() < 0.5 ? L : R) : (L.length > 0 ? L : R); res.push(...s.splice(0, Math.floor(Math.random() * parseInt(chunkMax.value)) + 1)); }
+        p.deck = res; document.getElementById('riffleLog').innerText = `分割: ${cp} 枚`; render();
     }
     function opFaro() {
         const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
-        const split = parseInt(document.getElementById('faroSplit').value) || 26;
-        const mode = document.getElementById('faroMode').value; const ratio = document.getElementById('faroRatio').value;
-        let A = p.deck.slice(0, split), B = p.deck.slice(split);
-        let f = (mode === 'out') ? A : B, s = (mode === 'out') ? B : A, res = [];
-        let r1 = (ratio === '1-1' ? 1 : 2), r2 = (ratio === '2-2' ? 2 : 1);
-        while (f.length > 0 || s.length > 0) { if (f.length > 0) res.push(...f.splice(0, r1)); if (s.length > 0) res.push(...s.splice(0, r2)); }
+        let mid = Math.floor(p.deck.length/2), A = p.deck.slice(0, mid), B = p.deck.slice(mid);
+        let f = (faroMode.value === 'out') ? A : B, s = (faroMode.value === 'out') ? B : A, res = [];
+        let r1 = faroRatio.value === '2-1' ? 2 : 1;
+        while (f.length > 0 || s.length > 0) { if (f.length > 0) res.push(...f.splice(0, r1)); if (s.length > 0) res.push(s.shift()); }
         p.deck = res; render();
     }
-    function opCut() { const p = piles[activePileIdx]; if (p.deck.length === 0) return; saveState(); let n = parseInt(document.getElementById('cutN').value) % p.deck.length; p.deck = [...p.deck.slice(n), ...p.deck.slice(0, n)]; render(); }
+    function opCut() { const p = piles[activePileIdx]; if (p.deck.length === 0) return; saveState(); let n = parseInt(cutN.value) % p.deck.length; p.deck = [...p.deck.slice(n), ...p.deck.slice(0, n)]; render(); }
+
+    function getLCS(current, ref) {
+        let m = current.length, n = ref.length;
+        let dp = Array.from({ length: m + 1 }, () => new Uint8Array(n + 1));
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                if (current[i-1] === ref[j-1]) dp[i][j] = dp[i-1][j-1] + 1;
+                else dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
+            }
+        }
+        return dp[m][n];
+    }
 
     function render() {
         const p = piles[activePileIdx]; const full = [...p.tempHand, ...p.deck];
-        let adj = 0; for (let i = 1; i < full.length; i++) { if (isMate(full[i].label, full[i-1].label)) adj++; }
-        document.getElementById('statsBar').innerHTML = `<span class="stats-tag">隣接メイト: ${adj}</span><span class="stats-tag">枚数: ${full.length}</span>`;
-        document.getElementById('handArea').classList.toggle('hidden', p.tempHand.length === 0);
-        const hd = document.getElementById('handDisplay'); hd.innerHTML = ''; p.tempHand.forEach((c, i) => hd.appendChild(createCardEl(c, i + 1, true)));
-        const dd = document.getElementById('deckDisplay'); dd.innerHTML = ''; p.deck.forEach((c, i) => dd.appendChild(createCardEl(c, p.tempHand.length + i + 1, false)));
+        let mates = 0; for (let i = 1; i < full.length; i++) { if (isMate(full[i].label, full[i-1].label)) mates++; }
+        
+        const lcsLen = getLCS(full.map(c=>c.id), p.referenceIds);
+        const survival = p.referenceIds.length > 0 ? ((lcsLen / p.referenceIds.length) * 100).toFixed(1) : "0";
+
+        document.getElementById('statsBar').innerHTML = `
+            <span class="stats-tag">枚数: ${full.length}</span>
+            <span class="stats-tag">メイト: ${mates}</span>
+            <span class="stats-tag text-blue-600">抜き出し率: ${survival}%</span>
+        `;
+        
+        handArea.classList.toggle('hidden', p.tempHand.length === 0);
+        handDisplay.innerHTML = ''; p.tempHand.forEach((c, i) => handDisplay.appendChild(createCardEl(c, i + 1, true, p.referenceIds, full)));
+        deckDisplay.innerHTML = ''; p.deck.forEach((c, i) => deckDisplay.appendChild(createCardEl(c, p.tempHand.length + i + 1, false, p.referenceIds, full)));
         if (sortableInstance) sortableInstance.destroy();
-        sortableInstance = Sortable.create(dd, { animation: 150, onEnd: function (e) {
+        sortableInstance = Sortable.create(deckDisplay, { animation: 150, onEnd: function (e) {
             saveState(); const d = [...p.tempHand, ...p.deck]; const item = d.splice(e.oldIndex + p.tempHand.length, 1)[0]; d.splice(e.newIndex + p.tempHand.length, 0, item); p.tempHand = []; p.deck = d; render();
         }});
     }
 
     function isMate(l1, l2) {
         if (!l1 || !l2) return false;
-        const m1 = l1.match(/^(\d+|[AJQK])([SHCD])$/);
-        const m2 = l2.match(/^(\d+|[AJQK])([SHCD])$/);
-        if (m1 && m2) {
-            const sameRank = m1[1] === m2[1];
-            const color1 = (m1[2] === 'S' || m1[2] === 'C') ? 'B' : 'R';
-            const color2 = (m2[2] === 'S' || m2[2] === 'C') ? 'B' : 'R';
-            return sameRank && color1 === color2;
-        }
+        const m1 = l1.match(/^(\d+|[AJQK])([SHCD])$/), m2 = l2.match(/^(\d+|[AJQK])([SHCD])$/);
+        if (m1 && m2) return m1[1] === m2[1] && ((m1[2] === 'S' || m1[2] === 'C') === (m2[2] === 'S' || m2[2] === 'C'));
         return l1.toLowerCase() === l2.toLowerCase();
     }
 
-    function createCardEl(card, pos, inHand) {
-        const el = document.createElement('div'); el.className = `card ${card.faceUp ? '' : 'face-down'} ${inHand ? 'in-hand-highlight' : ''}`;
-        const posEl = document.createElement('div'); posEl.className = 'card-pos'; posEl.innerText = pos; el.appendChild(posEl);
+    function createCardEl(card, pos, inHand, refIds, fullDeck) {
+        const el = document.createElement('div');
+        // ハイライト判定: 基準でも隣同士だったか
+        let classes = `card ${card.faceUp ? '' : 'face-down'} ${inHand ? 'in-hand-highlight' : ''}`;
+        const currentIdx = pos - 1;
+        const refIdx = refIds.indexOf(card.id);
         
+        if (refIdx !== -1) {
+            if (currentIdx < fullDeck.length - 1) {
+                const nextCardId = fullDeck[currentIdx + 1].id;
+                if (refIds[refIdx + 1] === nextCardId) el.classList.add('slug-next');
+            }
+            if (currentIdx > 0) {
+                const prevCardId = fullDeck[currentIdx - 1].id;
+                if (refIds[refIdx - 1] === prevCardId) el.classList.add('slug-prev');
+            }
+        }
+        el.className = classes;
+
+        const posEl = document.createElement('div'); posEl.className = 'card-pos'; posEl.innerText = pos; el.appendChild(posEl);
         if (card.faceUp) {
-            const match = card.label.match(/^(\d+|[AJQK])([SHCD])$/);
-            if (match) {
-                const config = COLORS[match[2]];
-                el.style.backgroundColor = config.bg;
-                el.classList.add(config.txt);
-                const bar = document.createElement('div'); bar.className = 'suit-bar'; bar.style.backgroundColor = config.bar; el.appendChild(bar);
+            const m = card.label.match(/^(\d+|[AJQK])([SHCD])$/);
+            if (m) {
+                const c = COLORS[m[2]]; el.style.backgroundColor = c.bg; el.classList.add(c.txt);
+                const b = document.createElement('div'); b.className = 'suit-bar'; b.style.backgroundColor = c.bar; el.appendChild(b);
             } else {
-                // ペア用カラーハッシュ
                 let h = 0; const key = card.label.toLowerCase(); for(let i=0; i<key.length; i++) h = key.charCodeAt(i) + ((h << 5) - h);
                 el.style.backgroundColor = `hsl(${50 + (Math.abs(h) % 270)}, 45%, 96%)`;
             }
-            const span = document.createElement('span'); span.innerText = card.label; el.appendChild(span);
+            const s = document.createElement('span'); s.innerText = card.label; el.appendChild(s);
         }
         el.onclick = (e) => { saveState(); if (e.shiftKey) { const d = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; d.splice(pos - 1, 1); piles[activePileIdx].tempHand = []; piles[activePileIdx].deck = d; } else { card.faceUp = !card.faceUp; } render(); };
         return el;
@@ -283,33 +247,30 @@
 
     function applyStackString(str) {
         saveState(); const tokens = str.split(/[\s,]+/).filter(t => t);
-        piles[activePileIdx].deck = tokens.map(t => {
-            let faceUp = true; let label = t;
-            if (t.length > 1 && /[v*↓]$/.test(t)) { faceUp = false; label = t.slice(0, -1); }
-            else if (t === '*' || t === '↓') { faceUp = false; label = ''; }
-            return { label, faceUp, id: Math.random() };
+        const newDeck = tokens.map(t => {
+            let f = t.length <= 1 || !/[v*↓]$/.test(t), l = (t === '*' || t === '↓') ? '' : (f ? t : t.slice(0, -1));
+            return { label: l, faceUp: f, id: Math.random().toString(36).substr(2, 9) };
         });
-        piles[activePileIdx].tempHand = []; render();
+        piles[activePileIdx].deck = newDeck; piles[activePileIdx].tempHand = [];
+        piles[activePileIdx].referenceIds = newDeck.map(c => c.id);
+        render();
     }
 
-    function applyPreset(type) {
-        if (type === 'pairAa') applyStackString("A a B b C c D d E e F f G g H h I i J j K k L l M m N n O o P p Q q R r S s T t U u V v W w X x Y y Z z");
-        if (type === 'ndo') applyStackString("AS 2S 3S 4S 5S 6S 7S 8S 9S 10S JS QS KS AD 2D 3D 4D 5D 6D 7D 8D 9D 10D JD QD KD KC QC JC 10C 9C 8C 7C 6C 5C 4C 3C 2C AC KH QH JH 10H 9H 8H 7H 6H 5H 4H 3H 2H AH");
-        if (type === 'mnemonica') applyStackString("4C 2H 7D 3C 4H 6D AS 5H 9S 2S QH 3D QC 8H 6S 5S 9H KC 2D JH 3S 8S 6H 10C 5D KD 2C 3H 8D 5C KS JD 8C 10S KH JC 7S 10H AD 4S 7H 4D AC 9C JS QD 7C QS 10D 6C AH 9D");
+    function applyPreset(t) {
+        if (t === 'ndo') applyStackString("AS 2S 3S 4S 5S 6S 7S 8S 9S 10S JS QS KS AD 2D 3D 4D 5D 6D 7D 8D 9D 10D JD QD KD KC QC JC 10C 9C 8C 7C 6C 5C 4C 3C 2C AC KH QH JH 10H 9H 8H 7H 6H 5H 4H 3H 2H AH");
+        if (t === 'mnemonica') applyStackString("4C 2H 7D 3C 4H 6D AS 5H 9S 2S QH 3D QC 8H 6S 5S 9H KC 2D JH 3S 8S 6H 10C 5D KD 2C 3H 8D 5C KS JD 8C 10S KH JC 7S 10H AD 4S 7H 4D AC 9C JS QD 7C QS 10D 6C AH 9D");
     }
 
     function applyCustom() {
-        const input = document.getElementById('customInput'); const val = input.value.trim(); if (!val) return;
-        if (!isNaN(val)) {
-            saveState(); piles[activePileIdx].deck = Array.from({length: parseInt(val)}, (_, i) => ({ label: String(i+1), faceUp: true, id: Math.random() }));
-            piles[activePileIdx].tempHand = []; render();
-        } else applyStackString(val); input.value = '';
+        const i = document.getElementById('customInput'); if (!i.value.trim()) return;
+        if (!isNaN(i.value)) {
+            saveState(); const newDeck = Array.from({length: parseInt(i.value)}, (_, j) => ({ label: String(j+1), faceUp: true, id: Math.random().toString(36).substr(2, 9) }));
+            piles[activePileIdx].deck = newDeck; piles[activePileIdx].tempHand = []; piles[activePileIdx].referenceIds = newDeck.map(c=>c.id); render();
+        } else applyStackString(i.value); i.value = '';
     }
 
-    function copyDeckText() { const full = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; navigator.clipboard.writeText(full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ')); alert("コピーしました"); }
-
-    renderPresetsUI();
-    render();
+    function copyDeckText() { const full = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; navigator.clipboard.writeText(full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ')); alert("コピー完了"); }
+    renderPresetsUI(); render();
 </script>
 </body>
 </html>
