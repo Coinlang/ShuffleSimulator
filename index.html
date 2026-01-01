@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShuffleSim v4.7</title>
+    <title>ShuffleSim v4.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
@@ -48,7 +48,7 @@
 <div class="app-layout">
     <aside id="sidebar">
         <div class="flex justify-between items-center mb-5">
-            <h1 class="font-black text-xl tracking-tighter">ShuffleSim v4.7</h1>
+            <h1 class="font-black text-xl tracking-tighter">ShuffleSim v4.8</h1>
             <div class="flex gap-1">
                 <button onclick="undo()" style="padding:4px 8px">Undo</button>
                 <button onclick="redo()" style="padding:4px 8px">Redo</button>
@@ -64,7 +64,7 @@
                 <button onclick="applyPreset('pairAa')">Pairs</button>
             </div>
             <button onclick="setReference()" class="primary w-full mb-2">現在を解析基準に設定</button>
-            <textarea id="customInput" rows="1" placeholder="ラベル/枚数" class="mb-2"></textarea>
+            <textarea id="customInput" rows="1" placeholder="AS, 10H, a, B..." class="mb-2"></textarea>
             <div class="flex gap-2">
                 <input type="text" id="stackName" placeholder="保存名" class="flex-1">
                 <button onclick="saveCurrentStack()" class="primary w-16">保存</button>
@@ -73,12 +73,12 @@
         </div>
 
         <div class="control-group">
-            <h2 class="section-label text-green-600">リフル</h2>
+            <h2 class="section-label text-green-600">リフル (双方向・スラグ検知)</h2>
             <div class="grid grid-cols-2 gap-2 mb-2">
                 <select id="riffleSplit" onchange="toggleRiffleField()" class="col-span-2"><option value="jitter">中央付近</option><option value="fixed">枚数指定</option></select>
                 <input type="number" id="riffleFixed" value="26" class="hidden col-span-2">
                 <div class="col-span-2">
-                    <label class="text-[0.6rem] text-gray-400 font-bold">1塊の枚数範囲 (n)</label>
+                    <label class="text-[0.6rem] text-gray-400 font-bold">ドロップ枚数範囲 (n)</label>
                     <div class="flex gap-2 items-center">
                         <input type="number" id="riffleMin" value="1" class="text-center w-full">
                         <span>~</span>
@@ -153,7 +153,20 @@
         return false;
     }
 
-    // --- 双方向・中央合流リフル v4.7 ---
+    // --- メイト判定の厳格化 v4.8 ---
+    function isMate(l1, l2) {
+        if (!l1 || !l2) return false;
+        const m1 = l1.match(/^(\d+|[AJQK])([SHCD])$/), m2 = l2.match(/^(\d+|[AJQK])([SHCD])$/);
+        if (m1 && m2) {
+            const sameRank = m1[1] === m2[1];
+            const color1 = (m1[2] === 'S' || m1[2] === 'C') ? 'Black' : 'Red';
+            const color2 = (m2[2] === 'S' || m2[2] === 'C') ? 'Black' : 'Red';
+            return sameRank && color1 === color2; // 同数字かつ同色
+        }
+        // アルファベットペア
+        return l1.toLowerCase() === l2.toLowerCase() && l1 !== l2;
+    }
+
     function opRiffle() {
         const p = piles[activePileIdx]; if (p.deck.length < 2) return;
         saveState();
@@ -161,18 +174,14 @@
         const splitType = document.getElementById('riffleSplit').value, cpBase = (splitType === 'fixed') ? parseInt(document.getElementById('riffleFixed').value) : Math.floor(p.deck.length/2);
 
         let finalDeck = []; let attempts = 0; let lastCp = 0;
-
-        while (attempts < 2000) {
+        while (attempts < 1000) {
             attempts++;
             lastCp = cpBase + (splitType === 'jitter' ? Math.floor(Math.random() * 7) - 3 : 0);
             let L = p.deck.slice(0, lastCp), R = p.deck.slice(lastCp);
             let res_top = [], res_bottom = [];
-
             while (L.length > 0 || R.length > 0) {
-                // ボトム交互取得 -> 底から積み上げる
                 if (L.length > 0) { let n = Math.floor(Math.random() * (rMax - rMin + 1)) + rMin; res_bottom = [...L.splice(-Math.min(n, L.length)), ...res_bottom]; }
                 if (R.length > 0) { let n = Math.floor(Math.random() * (rMax - rMin + 1)) + rMin; res_bottom = [...R.splice(-Math.min(n, R.length)), ...res_bottom]; }
-                // トップ交互取得 -> 頭から下に並べる
                 if (L.length > 0) { let n = Math.floor(Math.random() * (rMax - rMin + 1)) + rMin; res_top = [...res_top, ...L.splice(0, Math.min(n, L.length))]; }
                 if (R.length > 0) { let n = Math.floor(Math.random() * (rMax - rMin + 1)) + rMin; res_top = [...res_top, ...R.splice(0, Math.min(n, R.length))]; }
             }
@@ -191,9 +200,7 @@
         while (f.length > 0 || s.length > 0) { if (f.length > 0) res.push(...f.splice(0, r1)); if (s.length > 0) res.push(...s.splice(0, r2)); }
         p.deck = res; render();
     }
-
     function opCut() { const p = piles[activePileIdx]; if (p.deck.length === 0) return; saveState(); let n = parseInt(document.getElementById('cutN').value) % p.deck.length; p.deck = [...p.deck.slice(n), ...p.deck.slice(0, n)]; render(); }
-
     function opOverhandStep() {
         const p = piles[activePileIdx]; if (p.deck.length === 0) return; if (p.tempHand.length === 0) saveState();
         let n = Math.floor(Math.random() * (parseInt(ohMax.value) - parseInt(ohMin.value) + 1)) + parseInt(ohMin.value);
@@ -210,16 +217,14 @@
         const p = piles[activePileIdx]; const full = [...p.tempHand, ...p.deck];
         let mates = 0; for (let i = 1; i < full.length; i++) if (isMate(full[i].label, full[i-1].label)) mates++;
         document.getElementById('statsBar').innerHTML = `<span class="stats-tag">枚数: ${full.length}</span><span class="stats-tag">メイト: ${mates}</span>`;
-        document.getElementById('handArea').classList.toggle('hidden', p.tempHand.length === 0);
-        document.getElementById('handDisplay').innerHTML = ''; p.tempHand.forEach((c, i) => drawCard(c, i + 1, true, p.referenceIds, full, document.getElementById('handDisplay')));
-        document.getElementById('deckDisplay').innerHTML = ''; p.deck.forEach((c, i) => drawCard(c, p.tempHand.length + i + 1, false, p.referenceIds, full, document.getElementById('deckDisplay')));
+        handArea.classList.toggle('hidden', p.tempHand.length === 0);
+        handDisplay.innerHTML = ''; p.tempHand.forEach((c, i) => drawCard(c, i + 1, true, p.referenceIds, full, handDisplay));
+        deckDisplay.innerHTML = ''; p.deck.forEach((c, i) => drawCard(c, p.tempHand.length + i + 1, false, p.referenceIds, full, deckDisplay));
         if (sortableInstance) sortableInstance.destroy();
-        sortableInstance = Sortable.create(document.getElementById('deckDisplay'), { animation: 150, onEnd: function (e) {
+        sortableInstance = Sortable.create(deckDisplay, { animation: 150, onEnd: function (e) {
             saveState(); const d = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; const item = d.splice(e.oldIndex, 1)[0]; d.splice(e.newIndex, 0, item); piles[activePileIdx].deck = d; render();
         }});
     }
-
-    function isMate(l1, l2) { if (!l1 || !l2) return false; const m1 = l1.match(/^(\d+|[AJQK])([SHCD])$/), m2 = l2.match(/^(\d+|[AJQK])([SHCD])$/); if (m1 && m2) return m1[1] === m2[1] && ((m1[2] === 'S' || m1[2] === 'C') === (m2[2] === 'S' || m2[2] === 'C')); return l1.toLowerCase() === l2.toLowerCase(); }
 
     function drawCard(card, pos, inHand, refIds, fullDeck, container) {
         const el = document.createElement('div'); const cIdx = pos - 1, rIdx = refIds.indexOf(card.id);
