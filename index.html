@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShuffleSim v3.4</title>
+    <title>ShuffleSim v3.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
@@ -18,23 +18,18 @@
         .stats-container { background-color: #FBFBFC; border-bottom: 1px solid #E5E5E7; display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 16px; flex-shrink: 0; }
         .stats-inner { display: flex; gap: 8px; align-items: center; background: #EEEEF0; padding: 4px 12px; border-radius: 20px; border: 0.5px solid #D1D1D6; }
 
-        /* --- カード配色システム --- */
         .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 12px; padding: 0 10px; }
         @media (min-width: 768px) { .card-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 14px; padding: 0; } }
         
-        .card { aspect-ratio: 2/3; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: grab; background: #FFFFFF; border: 1.5px solid rgba(0,0,0,0.1); box-shadow: 0 1px 3px rgba(0,0,0,0.08); position: relative; overflow: hidden; transition: transform 0.1s; }
-        
-        /* スート別背景色 */
-        .suit-S { background-color: #E0E7FF !important; color: #312E81; border-color: #C7D2FE; } /* Indigo */
-        .suit-H { background-color: #FFE4E6 !important; color: #9F1239; border-color: #FECDD3; } /* Rose */
-        .suit-C { background-color: #D1FAE5 !important; color: #065F46; border-color: #A7F3D0; } /* Emerald */
-        .suit-D { background-color: #FFEDD5 !important; color: #9A3412; border-color: #FED7AA; } /* Orange */
+        .card { aspect-ratio: 2/3; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: grab; background: #FFFFFF; border: 1.5px solid rgba(0,0,0,0.1); box-shadow: 0 1px 3px rgba(0,0,0,0.08); position: relative; overflow: hidden; }
+        .suit-S { background-color: #E0E7FF !important; color: #312E81; border-color: #C7D2FE; }
+        .suit-H { background-color: #FFE4E6 !important; color: #9F1239; border-color: #FECDD3; }
+        .suit-C { background-color: #D1FAE5 !important; color: #065F46; border-color: #A7F3D0; }
+        .suit-D { background-color: #FFEDD5 !important; color: #9A3412; border-color: #FED7AA; }
 
-        /* ランクアクセント（メイト・ペア識別用） */
         .rank-badge { position: absolute; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: rgba(255,255,255,0.4); z-index: 1; border: 1px solid rgba(0,0,0,0.05); }
         .rank-label { position: relative; z-index: 2; }
 
-        /* スラッグ連結表示（青いフレーム） */
         .slug-active { border: 2.5px solid var(--mac-blue) !important; z-index: 10; }
         .slug-next { border-right: none !important; border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; margin-right: -13px; }
         .slug-prev { border-left: none !important; border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
@@ -55,37 +50,67 @@
 <div class="app-layout">
     <aside id="sidebar">
         <div class="flex justify-between items-center mb-5 lg:mb-10">
-            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v3.4</h1>
+            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v3.5</h1>
             <div class="flex gap-2 w-auto">
                 <button onclick="undo()" style="width: auto;">Undo</button>
                 <button onclick="redo()" style="width: auto;">Redo</button>
             </div>
         </div>
+
         <div class="control-group">
-            <h2 class="section-label">解析 & 基準</h2>
+            <h2 class="section-label">スタック・プリセット</h2>
             <div class="grid grid-cols-2 gap-2 mb-3">
-                <button onclick="applyPreset('ndo_chased')" class="bg-blue-50 border-blue-200 text-blue-700">CHaSeD NDO</button>
+                <button onclick="applyPreset('ndo_chased')" class="bg-blue-50 border-blue-200 text-blue-700">CHaSeD (A-K)</button>
+                <button onclick="applyPreset('ndo_uspcc')">USPCC Order</button>
                 <button onclick="applyPreset('mnemonica')">Mnemonica</button>
                 <button onclick="applyPreset('pairAa')">A/a Pairs</button>
-                <button onclick="setReference()" class="primary">現在を解析基準に</button>
+                <button onclick="setReference()" class="col-span-2 primary">現在を解析基準に設定</button>
             </div>
-            <textarea id="customInput" rows="1" placeholder="AS, 2S, 3S..." class="mb-2"></textarea>
+            <textarea id="customInput" rows="1" placeholder="ラベル または 枚数" class="mb-2"></textarea>
             <div class="flex gap-2"><input type="text" id="stackName" placeholder="保存名" class="flex-1"><button onclick="saveCurrentStack()" class="primary w-16 text-[0.6rem]">保存</button></div>
             <div id="customPresetList" class="mt-3"></div>
         </div>
+
         <div class="control-group">
             <h2 class="section-label text-blue-600">オーバーハンド</h2>
             <div class="flex gap-2 items-center"><input type="number" id="ohMin" value="1" class="text-center w-12"><span>~</span><input type="number" id="ohMax" value="6" class="text-center w-12"><button class="primary bg-blue-600" onclick="opOverhandStep()">1束</button></div>
-            <button onclick="opOverhandFinish()" class="mt-2">1周終える</button>
+            <button onclick="opOverhandFinish()" class="mt-2">最後まで剥ぐ（1周）</button>
         </div>
+
         <div class="control-group">
-            <h2 class="section-label text-green-600">リフル (交互落とし)</h2>
-            <div class="grid grid-cols-2 gap-2 mb-2"><input type="number" id="chunkMax" value="3" placeholder="噛み合わせ上限"><input type="number" id="rifflePasses" value="1" placeholder="回数"></div>
+            <h2 class="section-label text-green-600">リフル (交互)</h2>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <select id="riffleSplit" onchange="toggleRiffleField()" class="col-span-2"><option value="jitter">ランダム分け</option><option value="fixed">枚数指定</option></select>
+                <input type="number" id="riffleFixed" value="26" class="hidden col-span-2">
+                <input type="number" id="chunkMax" value="3" placeholder="噛み合わせ上限">
+                <input type="number" id="rifflePasses" value="1" placeholder="回数">
+            </div>
             <button class="primary bg-green-600" onclick="opRiffle()">リフル実行</button>
         </div>
+
         <div class="control-group">
-            <h2 class="section-label text-indigo-600">ファロー & カット</h2>
-            <div class="grid grid-cols-2 gap-2"><select id="faroMode"><option value="out">Out</option><option value="in">In</option></select><select id="faroRatio"><option value="1-1">1:1</option><option value="2-1">2:1</option></select><button class="primary bg-indigo-600" onclick="opFaro()">Faro</button><div class="flex gap-1"><input type="number" id="cutN" value="1"><button onclick="opCut()" class="bg-gray-600 text-white border-none">Cut</button></div></div>
+            <h2 class="section-label text-indigo-600">アドバンスド・ファロー</h2>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <div><label class="text-[0.6rem] text-gray-400 font-bold">モード</label>
+                    <select id="faroMode"><option value="out">Out</option><option value="in">In</option></select>
+                </div>
+                <div><label class="text-[0.6rem] text-gray-400 font-bold">比率</label>
+                    <select id="faroRatio"><option value="1-1">1:1</option><option value="2-2">2:2</option><option value="2-1">2:1</option></select>
+                </div>
+                <div class="col-span-2"><label class="text-[0.6rem] text-gray-400 font-bold">分割位置 (Split Point)</label>
+                    <input type="number" id="faroSplit" value="26">
+                </div>
+            </div>
+            <button class="primary bg-indigo-600" onclick="opFaro()">ファローを実行</button>
+        </div>
+
+        <div class="control-group">
+            <h2 class="section-label text-gray-600">カット</h2>
+            <div class="grid grid-cols-1 gap-2">
+                <label class="text-[0.6rem] text-gray-400 font-bold">ボトムへ送る枚数</label>
+                <input type="number" id="cutN" value="1">
+                <button class="primary bg-gray-600" onclick="opCut()">カット実行</button>
+            </div>
         </div>
     </aside>
 
@@ -98,7 +123,7 @@
         </div>
         <div class="flex-1 overflow-y-auto px-6 py-6 lg:px-12 bg-[#FAFAFA]" id="mainScroll">
             <div id="handArea" class="mb-10 hidden"><div class="area-label">移動した山</div><div id="handDisplay" class="card-grid"></div></div>
-            <div id="deckArea"><div class="area-label" id="deckAreaLabel">現在のデック</div><div id="deckDisplay" class="card-grid"></div></div>
+            <div id="deckArea"><div class="area-label" id="deckAreaLabel">デック本体</div><div id="deckDisplay" class="card-grid"></div></div>
         </div>
     </main>
 </div>
@@ -108,7 +133,6 @@
     let piles = Array.from({length: 4}, (_, i) => ({ name: String.fromCharCode(65 + i), deck: [], undoStack: [], redoStack: [], tempHand: [], referenceIds: [] }));
     let sortableInstance = null;
 
-    // --- ロジック ---
     function saveState() { const p = piles[activePileIdx]; p.undoStack.push(JSON.parse(JSON.stringify(p.deck))); if (p.undoStack.length > 200) p.undoStack.shift(); p.redoStack = []; }
     function undo() { const p = piles[activePileIdx]; if (p.undoStack.length === 0) return; p.redoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.undoStack.pop(); p.tempHand = []; render(); }
     function redo() { const p = piles[activePileIdx]; if (p.redoStack.length === 0) return; p.undoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.redoStack.pop(); render(); }
@@ -116,41 +140,45 @@
 
     function opOverhandStep() {
         const p = piles[activePileIdx]; if (p.deck.length === 0) return; if (p.tempHand.length === 0) saveState();
-        let n = Math.floor(Math.random() * (parseInt(ohMax.value) - parseInt(ohMin.value) + 1)) + parseInt(ohMin.value);
+        let min = parseInt(document.getElementById('ohMin').value), max = parseInt(document.getElementById('ohMax').value);
+        let n = Math.floor(Math.random() * (max - min + 1)) + min;
         p.tempHand = [...p.deck.splice(0, Math.min(n, p.deck.length)), ...p.tempHand]; render();
     }
     function opOverhandFinish() {
         const p = piles[activePileIdx]; if (p.deck.length === 0 && p.tempHand.length === 0) return; saveState();
+        let min = parseInt(document.getElementById('ohMin').value), max = parseInt(document.getElementById('ohMax').value);
         let wd = [...p.deck], wh = [...p.tempHand];
-        while (wd.length > 0) { let n = Math.floor(Math.random() * (ohMax.value-ohMin.value+1))+parseInt(ohMin.value); wh = [...wd.splice(0, Math.min(n, wd.length)), ...wh]; }
+        while (wd.length > 0) { let n = Math.floor(Math.random() * (max - min + 1)) + min; wh = [...wd.splice(0, Math.min(n, wd.length)), ...wh]; }
         p.deck = wh; p.tempHand = []; render();
     }
     function opRiffle() {
         const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
-        let cp = Math.floor(p.deck.length/2) + Math.floor(Math.random() * 7) - 3;
-        let L = p.deck.slice(0, cp), R = p.deck.slice(cp), res = [];
-        let turn = Math.random() < 0.5 ? 'L' : 'R';
-        while (L.length > 0 || R.length > 0) {
-            let s = (turn === 'L' && L.length > 0) ? L : (R.length > 0 ? R : L);
-            res.push(...s.splice(0, Math.floor(Math.random() * parseInt(chunkMax.value)) + 1));
-            turn = (s === L) ? 'R' : 'L';
-        }
-        p.deck = res; render();
+        let passes = parseInt(document.getElementById('rifflePasses').value), cMax = parseInt(document.getElementById('chunkMax').value);
+        for (let ps = 0; ps < passes; ps++) {
+            let cp = (document.getElementById('riffleSplit').value === 'fixed') ? parseInt(document.getElementById('riffleFixed').value) : Math.floor(p.deck.length/2) + Math.floor(Math.random() * 7) - 3;
+            let L = p.deck.slice(0, cp), R = p.deck.slice(cp), res = [];
+            let turn = Math.random() < 0.5 ? 'L' : 'R';
+            while (L.length > 0 || R.length > 0) {
+                let s = (turn === 'L' && L.length > 0) ? L : (R.length > 0 ? R : L);
+                res.push(...s.splice(0, Math.floor(Math.random() * cMax) + 1)); turn = (s === L) ? 'R' : 'L';
+            } p.deck = res;
+        } render();
     }
     function opFaro() {
         const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
-        let mid = Math.floor(p.deck.length/2), A = p.deck.slice(0, mid), B = p.deck.slice(mid);
-        let f = (faroMode.value === 'out') ? A : B, s = (faroMode.value === 'out') ? B : A, res = [];
-        let r1 = faroRatio.value === '2-1' ? 2 : 1;
-        while (f.length > 0 || s.length > 0) { if (f.length > 0) res.push(...f.splice(0, r1)); if (s.length > 0) res.push(s.shift()); }
+        let split = parseInt(document.getElementById('faroSplit').value), mode = document.getElementById('faroMode').value, ratio = document.getElementById('faroRatio').value;
+        let A = p.deck.slice(0, split), B = p.deck.slice(split);
+        let f = (mode === 'out') ? A : B, s = (mode === 'out') ? B : A, res = [];
+        let r1 = (ratio === '1-1' ? 1 : 2), r2 = (ratio === '2-2' ? 2 : 1);
+        while (f.length > 0 || s.length > 0) { if (f.length > 0) res.push(...f.splice(0, r1)); if (s.length > 0) res.push(...s.splice(0, r2)); }
         p.deck = res; render();
     }
-    function opCut() { const p = piles[activePileIdx]; if (p.deck.length === 0) return; saveState(); let n = parseInt(cutN.value) % p.deck.length; p.deck = [...p.deck.slice(n), ...p.deck.slice(0, n)]; render(); }
+    function opCut() { const p = piles[activePileIdx]; if (p.deck.length === 0) return; saveState(); let n = parseInt(document.getElementById('cutN').value) % p.deck.length; p.deck = [...p.deck.slice(n), ...p.deck.slice(0, n)]; render(); }
 
-    function getLCS(current, ref) {
-        let m = current.length, n = ref.length; if (m === 0 || n === 0) return 0;
+    function getLCS(curr, ref) {
+        let m = curr.length, n = ref.length; if (m === 0 || n === 0) return 0;
         let dp = Array.from({ length: m + 1 }, () => new Uint8Array(n + 1));
-        for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) dp[i][j] = (current[i-1] === ref[j-1]) ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+        for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) dp[i][j] = (curr[i-1] === ref[j-1]) ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
         return dp[m][n];
     }
 
@@ -164,11 +192,11 @@
             <span class="stats-tag">枚数: ${full.length}</span><span class="stats-tag">メイト: ${mates}</span><span class="stats-tag text-blue-600">抜き出し率: ${survival}%</span>
         `;
         
-        handArea.classList.toggle('hidden', p.tempHand.length === 0);
-        handDisplay.innerHTML = ''; p.tempHand.forEach((c, i) => drawCard(c, i + 1, true, p.referenceIds, full, handDisplay));
-        deckDisplay.innerHTML = ''; p.deck.forEach((c, i) => drawCard(c, p.tempHand.length + i + 1, false, p.referenceIds, full, deckDisplay));
+        document.getElementById('handArea').classList.toggle('hidden', p.tempHand.length === 0);
+        document.getElementById('handDisplay').innerHTML = ''; p.tempHand.forEach((c, i) => drawCard(c, i + 1, true, p.referenceIds, full, document.getElementById('handDisplay')));
+        document.getElementById('deckDisplay').innerHTML = ''; p.deck.forEach((c, i) => drawCard(c, p.tempHand.length + i + 1, false, p.referenceIds, full, document.getElementById('deckDisplay')));
         if (sortableInstance) sortableInstance.destroy();
-        sortableInstance = Sortable.create(deckDisplay, { animation: 150, onEnd: function (e) {
+        sortableInstance = Sortable.create(document.getElementById('deckDisplay'), { animation: 150, onEnd: function (e) {
             saveState(); const d = [...p.tempHand, ...p.deck]; const item = d.splice(e.oldIndex + p.tempHand.length, 1)[0]; d.splice(e.newIndex + p.tempHand.length, 0, item); p.tempHand = []; p.deck = d; render();
         }});
     }
@@ -182,42 +210,26 @@
 
     function drawCard(card, pos, inHand, refIds, fullDeck, container) {
         const el = document.createElement('div');
-        const cIdx = pos - 1; const rIdx = refIds.indexOf(card.id);
-        
+        const cIdx = pos - 1, rIdx = refIds.indexOf(card.id);
         let cls = `card ${card.faceUp ? '' : 'face-down'} ${inHand ? 'in-hand-highlight' : ''}`;
-        
         if (card.faceUp) {
             const m = card.label.match(/^(\d+|[AJQK])([SHCD])$/);
-            if (m) {
-                cls += ` suit-${m[2]}`; // スート背景色
-                el.innerHTML = `<div class="rank-badge" style="background-color:${getRankColor(m[1])}"></div><span class="rank-label">${card.label}</span>`;
-            } else {
-                const key = card.label.toLowerCase();
-                const rankColor = getRankColor(key);
-                el.style.backgroundColor = `hsl(${50 + (Math.abs(hashString(key)) % 270)}, 50%, 92%)`;
-                el.innerHTML = `<div class="rank-badge" style="background-color:${rankColor}"></div><span class="rank-label">${card.label}</span>`;
-            }
+            if (m) { cls += ` suit-${m[2]}`; el.innerHTML = `<div class="rank-badge" style="background-color:${getRankColor(m[1])}"></div><span class="rank-label">${card.label}</span>`; }
+            else { const key = card.label.toLowerCase(); el.style.backgroundColor = `hsl(${50 + (Math.abs(hash(key)) % 270)}, 50%, 92%)`; el.innerHTML = `<div class="rank-badge" style="background-color:${getRankColor(key)}"></div><span class="rank-label">${card.label}</span>`; }
         }
-        
-        // スラッグ連結
         if (rIdx !== -1) {
             let next = (cIdx < fullDeck.length - 1 && refIds[rIdx + 1] === fullDeck[cIdx + 1].id);
             let prev = (cIdx > 0 && refIds[rIdx - 1] === fullDeck[cIdx - 1].id);
             if (next || prev) cls += ' slug-active'; if (next) cls += ' slug-next'; if (prev) cls += ' slug-prev';
         }
-        
         el.className = cls;
         const posEl = document.createElement('div'); posEl.className = 'card-pos'; posEl.innerText = pos; el.appendChild(posEl);
         el.onclick = (e) => { saveState(); if (e.shiftKey) { const d = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; d.splice(pos - 1, 1); piles[activePileIdx].tempHand = []; piles[activePileIdx].deck = d; } else { card.faceUp = !card.faceUp; } render(); };
         container.appendChild(el);
     }
 
-    function getRankColor(rank) {
-        let h = Math.abs(hashString(rank.toLowerCase())) % 360;
-        return `hsla(${h}, 70%, 50%, 0.15)`;
-    }
-
-    function hashString(str) { let h = 0; for(let i=0; i<str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h); return h; }
+    function getRankColor(r) { let h = Math.abs(hash(r.toLowerCase())) % 360; return `hsla(${h}, 70%, 50%, 0.15)`; }
+    function hash(s) { let h = 0; for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return h; }
 
     function applyStackString(str) {
         saveState(); const tokens = str.split(/[\s,]+/).filter(t => t);
@@ -229,21 +241,21 @@
     }
 
     function applyPreset(t) {
-        if (t === 'ndo_chased') { const s = ['C','H','S','D'], r = ['A','2','3','4','5','6','7','8','9','10','J','Q','K']; let res = []; s.forEach(suit => r.forEach(rank => res.push(rank + suit))); applyStackString(res.join(' ')); }
+        if (t === 'ndo_chased') { let s = ['C','H','S','D'], r = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'], res = []; s.forEach(suit => r.forEach(rank => res.push(rank + suit))); applyStackString(res.join(' ')); }
+        if (t === 'ndo_uspcc') { let res = []; ['S','D'].forEach(s => ['A','2','3','4','5','6','7','8','9','10','J','Q','K'].forEach(r => res.push(r+s))); ['C','H'].forEach(s => ['K','Q','J','10','9','8','7','6','5','4','3','2','A'].forEach(r => res.push(r+s))); applyStackString(res.join(' ')); }
         if (t === 'mnemonica') applyStackString("4C 2H 7D 3C 4H 6D AS 5H 9S 2S QH 3D QC 8H 6S 5S 9H KC 2D JH 3S 8S 6H 10C 5D KD 2C 3H 8D 5C KS JD 8C 10S KH JC 7S 10H AD 4S 7H 4D AC 9C JS QD 7C QS 10D 6C AH 9D");
-        if (t === 'pairAa') applyStackString("A a B b C c D d E e F f G g H i j k l m n o p q r s t u v w x y z");
+        if (t === 'pairAa') applyStackString("A a B b C c D d E e F f G g H h I i J j K k L l M m N n O o P p Q q R r S s T t U u V v W w X x Y y Z z");
     }
 
     function saveCurrentStack() {
-        const name = stackName.value.trim(); if (!name) return alert("名前を入力");
+        const n = document.getElementById('stackName').value.trim(); if (!n) return alert("名前入力");
         const full = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck];
         const p = JSON.parse(localStorage.getItem('shufflesim_custom_stacks') || '{}');
-        p[name] = full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ');
-        localStorage.setItem('shufflesim_custom_stacks', JSON.stringify(p)); stackName.value = ''; renderCustom();
+        p[n] = full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' '); localStorage.setItem('shufflesim_custom_stacks', JSON.stringify(p)); renderCustom();
     }
     function renderCustom() {
         const list = document.getElementById('customPresetList'); const p = JSON.parse(localStorage.getItem('shufflesim_custom_stacks') || '{}');
-        list.innerHTML = Object.keys(p).length > 0 ? '<p class="text-[0.55rem] text-gray-400 font-bold mb-1">Custom Stacks:</p>' : '';
+        list.innerHTML = Object.keys(p).length > 0 ? '<p class="text-[0.55rem] text-gray-400 font-bold mb-1">Custom:</p>' : '';
         for (const n in p) {
             const row = document.createElement('div'); row.className = 'flex items-center gap-1 mb-1';
             const b = document.createElement('button'); b.className = 'text-[0.7rem] bg-white border-gray-200 text-left truncate flex-1 px-2 py-1'; b.innerText = n; b.onclick = () => applyStackString(p[n]);
@@ -251,6 +263,7 @@
             row.appendChild(b); row.appendChild(d); list.appendChild(row);
         }
     }
+    function toggleRiffleField() { document.getElementById('riffleFixed').classList.toggle('hidden', document.getElementById('riffleSplit').value === 'jitter'); }
     function copyDeckText() { const f = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; navigator.clipboard.writeText(f.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ')); alert("コピー完了"); }
     renderCustom(); render();
 </script>
