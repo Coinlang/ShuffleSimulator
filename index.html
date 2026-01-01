@@ -200,4 +200,84 @@
     function undo() { const p = piles[activePileIdx]; if (p.undoStack.length === 0) return; p.redoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.undoStack.pop(); p.tempHand = []; render(); }
     function redo() { const p = piles[activePileIdx]; if (p.redoStack.length === 0) return; p.undoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.redoStack.pop(); render(); }
     function getPairKey(label) { return label.toLowerCase(); }
-    function getColorFromKey(key) { let h = 0; for (let i = 0; i < key.length; i++)
+    function getColorFromKey(key) { let h = 0; for (let i = 0; i < key.length; i++) h = key.charCodeAt(i) + ((h << 5) - h); return `hsl(${50 + (Math.abs(h) % 270)}, 45%, 96%)`; }
+
+    function opOverhandStep() {
+        const p = piles[activePileIdx]; if (p.deck.length === 0) return; if (p.tempHand.length === 0) saveState();
+        let n = Math.floor(Math.random() * (parseInt(document.getElementById('ohMax').value) - parseInt(document.getElementById('ohMin').value) + 1)) + parseInt(document.getElementById('ohMin').value);
+        p.tempHand = [...p.deck.splice(0, Math.min(n, p.deck.length)), ...p.tempHand]; render();
+    }
+    function opOverhandFinish() {
+        const p = piles[activePileIdx]; if (p.deck.length === 0 && p.tempHand.length === 0) return; saveState();
+        let wd = [...p.deck], wh = [...p.tempHand];
+        while (wd.length > 0) { let n = Math.floor(Math.random() * (parseInt(ohMax.value)-parseInt(ohMin.value)+1))+parseInt(ohMin.value); wh = [...wd.splice(0, Math.min(n, wd.length)), ...wh]; }
+        p.deck = wh; p.tempHand = []; render();
+    }
+    function opRiffle() {
+        const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
+        for (let ps = 0; ps < parseInt(rifflePasses.value); ps++) {
+            let cp = Math.floor(p.deck.length/2) + Math.floor(Math.random() * 7) - 3;
+            let L = p.deck.slice(0, cp), R = p.deck.slice(cp), res = [];
+            while (L.length > 0 || R.length > 0) { let s = (L.length > 0 && R.length > 0) ? (Math.random() < 0.5 ? L : R) : (L.length > 0 ? L : R); res.push(...s.splice(0, Math.floor(Math.random() * parseInt(chunkMax.value)) + 1)); }
+            p.deck = res;
+        } render();
+    }
+    function opFaro() {
+        const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
+        let split = parseInt(faroSplit.value), A = p.deck.slice(0, split), B = p.deck.slice(split);
+        let f = (faroMode.value === 'out') ? A : B, s = (faroMode.value === 'out') ? B : A, res = [];
+        let r1 = (faroRatio.value === '1-1' ? 1 : 2), r2 = (faroRatio.value === '2-2' ? 2 : 1);
+        while (f.length > 0 || s.length > 0) { if (f.length > 0) res.push(...f.splice(0, r1)); if (s.length > 0) res.push(...s.splice(0, r2)); }
+        p.deck = res; render();
+    }
+    function opCut() { saveState(); const d = piles[activePileIdx].deck; if (d.length === 0) return; let n = parseInt(cutN.value) % d.length; piles[activePileIdx].deck = [...d.slice(n), ...d.slice(0, n)]; render(); }
+
+    function render() {
+        const p = piles[activePileIdx]; const full = [...p.tempHand, ...p.deck];
+        let adj = 0; for (let i = 1; i < full.length; i++) { if (getPairKey(full[i].label) === getPairKey(full[i-1].label)) adj++; }
+        statsBar.innerHTML = `<span class="stats-tag">ペア: ${adj}</span><span class="stats-tag">枚数: ${full.length}</span>`;
+        handArea.classList.toggle('hidden', p.tempHand.length === 0);
+        handDisplay.innerHTML = ''; p.tempHand.forEach((c, i) => handDisplay.appendChild(createCardEl(c, i + 1, true)));
+        deckDisplay.innerHTML = ''; p.deck.forEach((c, i) => deckDisplay.appendChild(createCardEl(c, p.tempHand.length + i + 1, false)));
+        if (sortableInstance) sortableInstance.destroy();
+        sortableInstance = Sortable.create(deckDisplay, { animation: 150, onEnd: function (e) {
+            saveState(); const d = [...p.tempHand, ...p.deck]; const item = d.splice(e.oldIndex + p.tempHand.length, 1)[0]; d.splice(e.newIndex + p.tempHand.length, 0, item); p.tempHand = []; p.deck = d; render();
+        }});
+    }
+
+    function createCardEl(card, pos, inHand) {
+        const el = document.createElement('div'); el.className = `card ${card.faceUp ? '' : 'face-down'} ${inHand ? 'in-hand-highlight' : ''}`;
+        const posEl = document.createElement('div'); posEl.className = 'card-pos'; posEl.innerText = pos; el.appendChild(posEl);
+        if (card.faceUp) {
+            el.style.backgroundColor = getColorFromKey(getPairKey(card.label));
+            const span = document.createElement('span'); span.innerText = card.label; if (/^(?:[AJQK1-9]|10)[HD]$/.test(card.label)) span.classList.add('text-red-suit'); el.appendChild(span);
+        }
+        el.onclick = (e) => { saveState(); if (e.shiftKey) { const d = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; d.splice(pos - 1, 1); piles[activePileIdx].tempHand = []; piles[activePileIdx].deck = d; } else { card.faceUp = !card.faceUp; } render(); };
+        return el;
+    }
+
+    function applyStackString(str) {
+        saveState(); const tokens = str.split(/[\s,]+/).filter(t => t);
+        piles[activePileIdx].deck = tokens.map(t => ({ label: t.replace(/[v*↓]$/,''), faceUp: !/[v*↓]$/.test(t), id: Math.random() }));
+        piles[activePileIdx].tempHand = []; render();
+    }
+
+    function applyPreset(type) {
+        if (type === 'pairAa') applyStackString("A a B b C c D d E e F f G g H h I i J j K k L l M m N n O o P p Q q R r S s T t U u V v W w X x Y y Z z");
+        if (type === 'ndo') applyStackString("AS 2S 3S 4S 5S 6S 7S 8S 9S 10S JS QS KS AD 2D 3D 4D 5D 6D 7D 8D 9D 10D JD QD KD KC QC JC 10C 9C 8C 7C 6C 5C 4C 3C 2C AC KH QH JH 10H 9H 8H 7H 6H 5H 4H 3H 2H AH");
+        if (type === 'mnemonica') applyStackString("4C 2H 7D 3C 4H 6D AS 5H 9S 2S QH 3D QC 8H 6S 5S 9H KC 2D JH 3S 8S 6H 10C 5D KD 2C 3H 8D 5C KS JD 8C 10S KH JC 7S 10H AD 4S 7H 4D AC 9C JS QD 7C QS 10D 6C AH 9D");
+    }
+
+    function applyCustom() {
+        const val = customInput.value.trim(); if (!val) return;
+        if (!isNaN(val)) { saveState(); piles[activePileIdx].deck = Array.from({length: parseInt(val)}, (_, i) => ({ label: String(i+1), faceUp: true, id: Math.random() })); piles[activePileIdx].tempHand = []; render(); }
+        else applyStackString(val); customInput.value = '';
+    }
+
+    function copyDeckText() { const full = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; navigator.clipboard.writeText(full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ')); alert("コピーしました"); }
+
+    renderPresetsUI();
+    render();
+</script>
+</body>
+</html>
