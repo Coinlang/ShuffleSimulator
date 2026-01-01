@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ShuffleSim v1.7 - Responsive</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --mac-bg: #F2F2F7;
+            --mac-sidebar: #E5E5EA;
+            --mac-border: #D1D1D6;
+            --mac-blue: #007AFF;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            background-color: var(--mac-bg);
+            color: #1C1C1E;
+            overscroll-behavior: none;
+        }
+
+        /* スマホ・PCの切り替え */
+        .app-container { display: flex; height: 100vh; flex-direction: column; }
+        @media (min-width: 1024px) { .app-container { flex-direction: row; } }
+
+        aside { 
+            background-color: var(--mac-sidebar); 
+            border-right: 1px solid var(--mac-border);
+            width: 100%; height: auto; max-height: 40vh; overflow-y: auto;
+        }
+        @media (min-width: 1024px) { aside { width: 320px; height: 100vh; max-height: 100vh; } }
+
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 10px; }
+        @media (min-width: 768px) { .card-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 14px; } }
+
+        .card {
+            aspect-ratio: 2/3;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: grab;
+            background: #FFFFFF; border: 0.5px solid rgba(0,0,0,0.15);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            position: relative;
+        }
+        @media (min-width: 768px) { .card { font-size: 0.95rem; border-radius: 10px; } }
+
+        .card-pos { position: absolute; bottom: 4px; right: 6px; font-size: 0.55rem; font-weight: 800; color: #AEAEB2; }
+        .card.face-down { background: #1C1C1E !important; border: none; }
+        .card.face-down::before { content: ""; color: rgba(255,255,255,0.05); font-size: 1.5rem; }
+
+        .text-red-suit { color: #FF3B30 !important; }
+
+        .control-group {
+            background: rgba(255,255,255,0.5);
+            border-radius: 12px; padding: 12px; margin-bottom: 12px;
+            border: 0.5px solid rgba(0,0,0,0.05);
+        }
+        .section-label { font-size: 0.65rem; font-weight: 800; color: #8E8E93; text-transform: uppercase; margin-bottom: 8px; display: block; }
+
+        button { font-size: 0.75rem; font-weight: 600; padding: 6px 10px; border-radius: 6px; background: #FFFFFF; border: 1px solid var(--mac-border); transition: 0.1s; }
+        button.primary { border: none; color: white; background-color: var(--mac-blue); }
+
+        .stats-tag { font-size: 0.7rem; font-weight: 700; color: #48484A; background: #FFFFFF; padding: 3px 10px; border-radius: 20px; border: 0.5px solid var(--mac-border); }
+        .in-hand-highlight { border: 2px solid var(--mac-blue) !important; background: #F0F7FF !important; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <aside class="p-4 shrink-0 shadow-inner">
+        <header class="mb-4 flex justify-between items-center lg:block">
+            <h1 class="font-black text-sm tracking-tight lg:mb-4 lg:text-base">ShuffleSim v1.7</h1>
+            <div class="flex gap-2">
+                <button onclick="undo()">元に戻す</button>
+                <button onclick="redo()">やり直す</button>
+            </div>
+        </header>
+
+        <div class="control-group">
+            <h2 class="section-label">準備</h2>
+            <div class="grid grid-cols-2 lg:grid-cols-1 gap-2">
+                <button onclick="applyPreset('ndo')">新品 (NDO)</button>
+                <button onclick="applyPreset('mnemonica')">Mnemonica</button>
+                <button onclick="applyPreset('pairAa')" class="col-span-2 lg:col-span-1">A/a ペア生成</button>
+            </div>
+            <div class="mt-2 flex gap-1">
+                <input type="text" id="customInput" class="flex-1 text-xs" placeholder="ラベル名/枚数">
+                <button onclick="applyCustom()" class="primary">適用</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h2 class="section-label text-blue-600">オーバーハンド</h2>
+            <div class="flex items-center gap-2 mb-2">
+                <input type="number" id="ohMin" value="1" class="text-center">
+                <span class="text-gray-400">~</span>
+                <input type="number" id="ohMax" value="6" class="text-center">
+            </div>
+            <div class="flex gap-1">
+                <button class="flex-1 primary bg-blue-600" onclick="opOverhandStep()">1束剥ぐ</button>
+                <button class="flex-1" onclick="opOverhandFinish()">1周終える</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h2 class="section-label text-green-600">リフル</h2>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <select id="riffleSplit" onchange="toggleRiffleField()" class="col-span-2 text-xs">
+                    <option value="jitter">ランダム分け</option>
+                    <option value="fixed">枚数指定</option>
+                </select>
+                <input type="number" id="riffleFixed" value="26" class="hidden col-span-2">
+                <div class="text-[0.6rem] text-gray-400 font-bold">噛み合わせ</div>
+                <div class="text-[0.6rem] text-gray-400 font-bold text-right">回数</div>
+                <input type="number" id="chunkMax" value="3">
+                <input type="number" id="rifflePasses" value="1">
+            </div>
+            <button class="w-full primary bg-green-600" onclick="opRiffle()">リフル実行</button>
+        </div>
+
+        <div class="control-group">
+            <h2 class="section-label text-indigo-600">ファロー & カット</h2>
+            <div class="grid grid-cols-2 gap-1 mb-2 text-xs">
+                <select id="faroMode"><option value="out">Out</option><option value="in">In</option></select>
+                <select id="faroRatio"><option value="1-1">1:1</option><option value="2-1">2:1</option></select>
+            </div>
+            <div class="flex gap-1">
+                <button class="flex-1 primary bg-indigo-600" onclick="opFaro()">Faro</button>
+                <input type="number" id="cutN" value="1" class="w-12 text-center">
+                <button class="flex-1" onclick="opCut()">Cut</button>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-hidden bg-white">
+        <div class="h-12 px-4 border-b border-gray-100 flex items-center justify-between bg-white/80 sticky top-0 z-20">
+            <div id="statsBar" class="flex gap-2"></div>
+            <div id="tabsContainer" class="hidden md:flex gap-4"></div>
+            <button onclick="copyDeckText()" class="text-[10px] font-bold text-blue-500">コピー</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 md:p-10 bg-[#FAFAFA]">
+            <div id="deckDisplay" class="card-grid"></div>
+        </div>
+    </main>
+</div>
+
+<script>
+    let activePileIdx = 0;
+    const piles = Array.from({length: 4}, (_, i) => ({
+        name: String.fromCharCode(65 + i), deck: [], undoStack: [], redoStack: [], tempHand: []
+    }));
+
+    let sortableInstance = null;
+    function toggleRiffleField() { document.getElementById('riffleFixed').classList.toggle('hidden', document.getElementById('riffleSplit').value === 'jitter'); }
+    function saveState() {
+        const p = piles[activePileIdx];
+        p.undoStack.push(JSON.parse(JSON.stringify(p.deck)));
+        if (p.undoStack.length > 200) p.undoStack.shift();
+        p.redoStack = [];
+    }
+    function undo() { const p = piles[activePileIdx]; if (p.undoStack.length === 0) return; p.redoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.undoStack.pop(); p.tempHand = []; render(); }
+    function redo() { const p = piles[activePileIdx]; if (p.redoStack.length === 0) return; p.undoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.redoStack.pop(); render(); }
+    function getRNG() {
+        const seedStr = "ShuffleSim"; 
+        let hash = 0; for (let i = 0; i < seedStr.length; i++) hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
+        let state = hash; return function() { state |= 0; state = state + 0x6D2B79F5 | 0; let t = Math.imul(state ^ state >>> 15, 1 | state); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    }
+    function getPairKey(label) { return label.toLowerCase().replace(/['v↑↓]+$/, '').replace(/'/g, ''); }
+    function getColorFromKey(key) { if (!key) return '#FFFFFF'; let hash = 0; for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash); const hue = 50 + (Math.abs(hash) % 250); return `hsl(${hue}, 45%, 96%)`; }
+
+    // Operations
+    function opOverhandStep() {
+        const p = piles[activePileIdx]; if (p.deck.length === 0 && p.tempHand.length === 0) return;
+        if (p.tempHand.length === 0) saveState();
+        const rng = getRNG(); const min = parseInt(document.getElementById('ohMin').value) || 1; const max = parseInt(document.getElementById('ohMax').value) || 6;
+        let n = Math.floor(rng() * (max - min + 1)) + min;
+        const bundle = p.deck.splice(0, Math.min(n, p.deck.length));
+        p.tempHand = [...bundle, ...p.tempHand];
+        if (p.deck.length === 0) { p.deck = p.tempHand; p.tempHand = []; } render();
+    }
+    function opOverhandFinish() { const p = piles[activePileIdx]; while (p.deck.length > 0) opOverhandStep(); }
+    function opRiffle() {
+        const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
+        const rng = getRNG(); const passes = parseInt(document.getElementById('rifflePasses').value) || 1;
+        const cMax = parseInt(document.getElementById('chunkMax').value);
+        for (let ps = 0; ps < passes; ps++) {
+            let L = p.deck.length; let cutPoint = Math.floor(L/2) + Math.floor(rng() * 7) - 3;
+            let left = p.deck.slice(0, cutPoint), right = p.deck.slice(cutPoint), result = [];
+            while (left.length > 0 || right.length > 0) {
+                let side = (left.length > 0 && right.length > 0) ? (rng() < 0.5 ? left : right) : (left.length > 0 ? left : right);
+                let n = Math.floor(rng() * cMax) + 1; result.push(...side.splice(0, Math.min(n, side.length)));
+            }
+            p.deck = result;
+        } render();
+    }
+    function opFaro() {
+        const p = piles[activePileIdx]; saveState(); const mode = document.getElementById('faroMode').value;
+        let A = p.deck.slice(0, p.deck.length/2), B = p.deck.slice(p.deck.length/2);
+        let first = (mode === 'out') ? A : B, second = (mode === 'out') ? B : A, result = [];
+        while (first.length > 0) { result.push(first.shift(), second.shift()); } p.deck = result; render();
+    }
+    function opCut() { saveState(); let n = parseInt(document.getElementById('cutN').value) % piles[activePileIdx].deck.length; const d = piles[activePileIdx].deck; piles[activePileIdx].deck = [...d.slice(n), ...d.slice(0, n)]; render(); }
+
+    function render() {
+        const p = piles[activePileIdx];
+        const fullDeck = [...p.tempHand, ...p.deck];
+        let adj = 0; for (let i = 1; i < fullDeck.length; i++) { if (getPairKey(fullDeck[i].label) === getPairKey(fullDeck[i-1].label)) adj++; }
+        document.getElementById('statsBar').innerHTML = `<span class="stats-tag">ペア: ${adj}</span><span class="stats-tag">枚数: ${fullDeck.length}</span>`;
+
+        const deckArea = document.getElementById('deckDisplay'); deckArea.innerHTML = '';
+        fullDeck.forEach((card, idx) => {
+            const el = document.createElement('div'); el.className = `card ${card.faceUp ? '' : 'face-down'} ${idx < p.tempHand.length ? 'in-hand-highlight' : ''}`;
+            const posEl = document.createElement('div'); posEl.className = 'card-pos'; posEl.innerText = idx + 1; el.appendChild(posEl);
+            if (card.faceUp) {
+                el.style.backgroundColor = getColorFromKey(getPairKey(card.label));
+                const span = document.createElement('span'); span.innerText = card.label; if (/^(?:[AJQK1-9]|10)[HD]$/.test(card.label)) span.classList.add('text-red-suit'); el.appendChild(span);
+            }
+            el.onclick = (e) => { saveState(); if (e.shiftKey) { fullDeck.splice(idx, 1); p.tempHand = []; p.deck = fullDeck; } else { card.faceUp = !card.faceUp; } render(); };
+            deckArea.appendChild(el);
+        });
+
+        if (sortableInstance) sortableInstance.destroy();
+        sortableInstance = Sortable.create(deckArea, { animation: 150, onEnd: function (evt) {
+            saveState(); const d = fullDeck; const item = d.splice(evt.oldIndex, 1)[0]; d.splice(evt.newIndex, 0, item); p.tempHand = []; p.deck = d; render();
+        }});
+    }
+
+    function applyPreset(type) {
+        saveState(); let newDeck = []; const createCard = (l) => ({ label: l, faceUp: true, id: Math.random().toString(36).substr(2, 9) });
+        if (type === 'pairAa') "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(l => newDeck.push(createCard(l), createCard(l.toLowerCase())));
+        if (type === 'ndo') ['S','D','C','H'].forEach(s => ['A','2','3','4','5','6','7','8','9','10','J','Q','K'].forEach(r => newDeck.push(createCard(r+s))));
+        if (type === 'mnemonica') "4C 2H 7D 3C 4H 6D AS 5H 9S 2S QH 3D QC 8H 6S 5S 9H KC 2D JH 3S 8S 6H 10C 5D KD 2C 3H 8D 5C KS JD 8C 10S KH JC 7S 10H AD 4S 7H 4D AC 9C JS QD 7C QS 10D 6C AH 9D".split(' ').forEach(l => newDeck.push(createCard(l)));
+        piles[activePileIdx].deck = newDeck; piles[activePileIdx].tempHand = []; render();
+    }
+
+    function applyCustom() {
+        const val = document.getElementById('customInput').value.trim(); if (!val) return; saveState();
+        if (!isNaN(val)) piles[activePileIdx].deck = Array.from({length: parseInt(val)}, (_, i) => ({ label: String(i+1), faceUp: true, id: Math.random() }));
+        else piles[activePileIdx].deck = val.split(/[\s, \n]+/).filter(t => t).map(t => ({ label: t.replace(/[v*↓]$/,''), faceUp: !/[v*↓]$/.test(t), id: Math.random() }));
+        piles[activePileIdx].tempHand = []; render();
+    }
+
+    function copyDeckText() { const full = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; navigator.clipboard.writeText(full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ')); alert("コピーしました"); }
+    render();
+</script>
+</body>
+</html>
