@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShuffleSim v2.1</title>
+    <title>ShuffleSim v2.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
@@ -32,11 +32,11 @@
             .app-layout { flex-direction: row; }
         }
 
-        /* サイドバー / 操作パネル */
+        /* 操作パネル (上部/左側) */
         aside {
             background-color: var(--mac-sidebar);
             border-bottom: 1px solid var(--mac-border);
-            height: 45vh; /* スマホでの高さ */
+            height: 45vh;
             overflow-y: auto;
             flex-shrink: 0;
             z-index: 20;
@@ -61,56 +61,58 @@
             background: #FFFFFF;
         }
 
-        /* --- カードデザイン --- */
+        /* --- カード表示 (スマホ向けに縮小 & 余白追加) --- */
         .card-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); /* 60pxから54pxへ縮小 */
+            gap: 12px;
+            padding: 0 10px; /* グリッド内側にも余白 */
         }
         @media (min-width: 768px) {
-            .card-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 14px; }
+            .card-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 14px; padding: 0; }
         }
 
         .card {
             aspect-ratio: 2/3;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: grab;
+            border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: grab;
             background: #FFFFFF; border: 0.5px solid rgba(0,0,0,0.15);
             box-shadow: 0 1px 2px rgba(0,0,0,0.04);
             position: relative;
         }
         .card-pos { position: absolute; bottom: 4px; right: 6px; font-size: 0.55rem; font-weight: 900; color: #AEAEB2; }
         .card.face-down { background: #1C1C1E !important; border: none; }
-        .card.face-down::before { content: ""; color: rgba(255,255,255,0.05); font-size: 1.5rem; }
+        .card.face-down::before { content: ""; color: rgba(255,255,255,0.05); font-size: 1.4rem; }
 
         .text-red-suit { color: #FF3B30 !important; }
 
+        /* --- セクション分離スタイル --- */
         .control-group {
             background: rgba(255,255,255,0.6);
-            border-radius: 12px; padding: 12px; margin-bottom: 14px;
+            border-radius: 12px; padding: 12px; margin-bottom: 16px;
             border: 0.5px solid rgba(0,0,0,0.05);
         }
-        .section-label { font-size: 0.65rem; font-weight: 800; color: #8E8E93; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .section-label { font-size: 0.65rem; font-weight: 800; color: #8E8E93; text-transform: uppercase; margin-bottom: 8px; display: block; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px; }
 
         input, select, textarea {
             background: #FFFFFF; border: 1px solid var(--mac-border); border-radius: 6px;
-            padding: 5px 10px; font-size: 0.8rem; outline: none; width: 100%;
+            padding: 5px 8px; font-size: 0.8rem; outline: none; width: 100%;
         }
-        button { font-size: 0.8rem; font-weight: 600; padding: 7px 10px; border-radius: 8px; background: #FFFFFF; border: 1px solid var(--mac-border); transition: 0.1s; width: 100%; }
+        button { font-size: 0.8rem; font-weight: 600; padding: 7px 10px; border-radius: 8px; background: #FFFFFF; border: 1px solid var(--mac-border); transition: 0.1s; width: 100%; cursor: pointer; }
         button:active { transform: scale(0.96); background: #F2F2F7; }
         button.primary { border: none; color: white; background-color: var(--mac-blue); }
 
         .stats-tag { font-size: 0.7rem; font-weight: 700; color: #48484A; background: #FFFFFF; padding: 3px 12px; border-radius: 20px; border: 0.5px solid var(--mac-border); }
         .in-hand-highlight { border: 2px solid var(--mac-blue) !important; background: #F0F7FF !important; }
-        .area-label { font-size: 0.6rem; font-weight: 900; color: var(--mac-blue); margin-bottom: 8px; text-transform: uppercase; border-left: 3px solid var(--mac-blue); padding-left: 8px; }
+        .area-label { font-size: 0.6rem; font-weight: 900; color: var(--mac-blue); margin-bottom: 10px; text-transform: uppercase; border-left: 4px solid var(--mac-blue); padding-left: 8px; }
     </style>
 </head>
 <body>
 
 <div class="app-layout">
     <aside>
-        <div class="flex justify-between items-center mb-4 lg:mb-8">
-            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v2.1</h1>
+        <div class="flex justify-between items-center mb-5 lg:mb-10">
+            <h1 class="font-black text-sm lg:text-xl tracking-tighter">ShuffleSim v2.3</h1>
             <div class="flex gap-2 w-auto">
                 <button onclick="undo()" style="width: auto;">Undo</button>
                 <button onclick="redo()" style="width: auto;">Redo</button>
@@ -118,7 +120,7 @@
         </div>
 
         <div class="control-group">
-            <h2 class="section-label">準備 (Presets)</h2>
+            <h2 class="section-label">準備</h2>
             <div class="grid grid-cols-3 gap-2 mb-2">
                 <button onclick="applyPreset('pairAa')">ペア</button>
                 <button onclick="applyPreset('ndo')">NDO</button>
@@ -126,7 +128,7 @@
             </div>
             <div class="flex gap-2">
                 <input type="text" id="customInput" placeholder="ラベル または 枚数">
-                <button onclick="applyCustom()" class="primary w-20">適用</button>
+                <button onclick="applyCustom()" class="primary w-24">適用</button>
             </div>
         </div>
 
@@ -134,7 +136,7 @@
             <h2 class="section-label text-blue-600">オーバーハンド</h2>
             <div class="grid grid-cols-1 gap-3 mb-3">
                 <div class="flex items-center gap-2">
-                    <label class="text-[0.6rem] font-bold text-gray-400 whitespace-nowrap">剥ぎ取る枚数:</label>
+                    <label class="text-[0.6rem] font-bold text-gray-400">枚数範囲:</label>
                     <input type="number" id="ohMin" value="1" class="text-center">
                     <span class="text-gray-300">~</span>
                     <input type="number" id="ohMax" value="6" class="text-center">
@@ -150,8 +152,8 @@
             <h2 class="section-label text-green-600">リフル</h2>
             <div class="grid grid-cols-1 gap-3 mb-2">
                 <select id="riffleSplit" onchange="toggleRiffleField()">
-                    <option value="jitter">中央付近でランダム分け</option>
-                    <option value="fixed">正確な枚数で分ける</option>
+                    <option value="jitter">中央付近ランダム</option>
+                    <option value="fixed">正確な枚数分け</option>
                 </select>
                 <input type="number" id="riffleFixed" value="26" class="hidden">
                 <div class="flex gap-3">
@@ -159,40 +161,37 @@
                         <label class="text-[0.6rem] text-gray-400 font-bold">噛み合わせ最大</label>
                         <input type="number" id="chunkMax" value="3">
                     </div>
-                    <div class="w-20">
+                    <div class="w-16">
                         <label class="text-[0.6rem] text-gray-400 font-bold">回数</label>
                         <input type="number" id="rifflePasses" value="1">
                     </div>
                 </div>
             </div>
-            <button class="primary bg-green-600" onclick="opRiffle()">リフルを実行</button>
+            <button class="primary bg-green-600" onclick="opRiffle()">リフル実行</button>
         </div>
 
         <div class="control-group">
             <h2 class="section-label text-indigo-600">アドバンスド・ファロー</h2>
             <div class="grid grid-cols-2 gap-2 mb-3">
-                <div>
-                    <label class="text-[0.6rem] text-gray-400 font-bold">モード</label>
+                <div><label class="text-[0.6rem] text-gray-400 font-bold">モード</label>
                     <select id="faroMode"><option value="out">Out</option><option value="in">In</option></select>
                 </div>
-                <div>
-                    <label class="text-[0.6rem] text-gray-400 font-bold">比率</label>
+                <div><label class="text-[0.6rem] text-gray-400 font-bold">比率</label>
                     <select id="faroRatio"><option value="1-1">1:1</option><option value="2-2">2:2</option><option value="2-1">2:1</option></select>
                 </div>
-                <div class="col-span-2">
-                    <label class="text-[0.6rem] text-gray-400 font-bold">分割位置 (Split Point)</label>
+                <div class="col-span-2"><label class="text-[0.6rem] text-gray-400 font-bold">分割位置 (Split Point)</label>
                     <input type="number" id="faroSplit" value="26">
                 </div>
             </div>
-            <button class="primary bg-indigo-600" onclick="opFaro()">ファローを実行</button>
+            <button class="primary bg-indigo-600" onclick="opFaro()">ファロー実行</button>
         </div>
 
         <div class="control-group">
             <h2 class="section-label text-gray-600">カット</h2>
             <div class="grid grid-cols-1 gap-2">
-                <label class="text-[0.6rem] text-gray-400 font-bold">下へ送る枚数</label>
+                <label class="text-[0.6rem] text-gray-400 font-bold">ボトムへ送る枚数</label>
                 <input type="number" id="cutN" value="1">
-                <button class="primary bg-gray-600" onclick="opCut()">カットを実行</button>
+                <button class="primary bg-gray-600" onclick="opCut()">カット実行</button>
             </div>
         </div>
     </aside>
@@ -200,16 +199,10 @@
     <main>
         <div class="h-12 px-6 border-b border-gray-100 flex items-center justify-between bg-white/80 sticky top-0 z-10 backdrop-blur-sm">
             <div id="statsBar" class="flex gap-3"></div>
-            <div class="flex items-center gap-3">
-                <div class="hidden sm:flex items-center gap-1 border-r pr-3 mr-1">
-                    <span class="text-[9px] font-black text-gray-400 uppercase">Seed:</span>
-                    <input type="text" id="seedInput" class="w-16 h-6 text-[9px] border-none bg-transparent font-mono" placeholder="Auto">
-                </div>
-                <button onclick="copyDeckText()" class="text-[11px] font-bold text-blue-500 w-auto border-none p-0">コピー</button>
-            </div>
+            <button onclick="copyDeckText()" class="text-[11px] font-bold text-blue-500 w-auto border-none p-0">結果をコピー</button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-6 lg:p-12 bg-[#FAFAFA]">
+        <div class="flex-1 overflow-y-auto px-6 py-6 lg:px-12 lg:py-12 bg-[#FAFAFA]">
             <div id="handArea" class="mb-10 hidden">
                 <div class="area-label">移動した山 (Hand)</div>
                 <div id="handDisplay" class="card-grid"></div>
@@ -230,178 +223,81 @@
 
     let sortableInstance = null;
 
-    function toggleRiffleField() {
-        document.getElementById('riffleFixed').classList.toggle('hidden', document.getElementById('riffleSplit').value === 'jitter');
-    }
-
+    function toggleRiffleField() { document.getElementById('riffleFixed').classList.toggle('hidden', document.getElementById('riffleSplit').value === 'jitter'); }
     function saveState() {
-        const p = piles[activePileIdx];
-        p.undoStack.push(JSON.parse(JSON.stringify(p.deck)));
-        if (p.undoStack.length > 200) p.undoStack.shift();
-        p.redoStack = [];
+        const p = piles[activePileIdx]; p.undoStack.push(JSON.parse(JSON.stringify(p.deck)));
+        if (p.undoStack.length > 200) p.undoStack.shift(); p.redoStack = [];
     }
-
-    function undo() {
-        const p = piles[activePileIdx];
-        if (p.undoStack.length === 0) return;
-        p.redoStack.push(JSON.parse(JSON.stringify(p.deck)));
-        p.deck = p.undoStack.pop();
-        p.tempHand = [];
-        render();
-    }
-
-    function redo() {
-        const p = piles[activePileIdx];
-        if (p.redoStack.length === 0) return;
-        p.undoStack.push(JSON.parse(JSON.stringify(p.deck)));
-        p.deck = p.redoStack.pop();
-        render();
-    }
-
+    function undo() { const p = piles[activePileIdx]; if (p.undoStack.length === 0) return; p.redoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.undoStack.pop(); p.tempHand = []; render(); }
+    function redo() { const p = piles[activePileIdx]; if (p.redoStack.length === 0) return; p.undoStack.push(JSON.parse(JSON.stringify(p.deck))); p.deck = p.redoStack.pop(); render(); }
     function getRNG() {
-        const seedStr = document.getElementById('seedInput').value || "ShuffleSim";
-        let hash = 0;
-        for (let i = 0; i < seedStr.length; i++) hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
-        let state = hash;
-        return function() {
-            state |= 0; state = state + 0x6D2B79F5 | 0;
-            let t = Math.imul(state ^ state >>> 15, 1 | state);
-            t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-            return ((t ^ t >>> 14) >>> 0) / 4294967296;
-        };
+        const seedStr = "ShuffleSim";
+        let hash = 0; for (let i = 0; i < seedStr.length; i++) hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
+        let state = hash; return function() { state |= 0; state = state + 0x6D2B79F5 | 0; let t = Math.imul(state ^ state >>> 15, 1 | state); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
     }
-
     function getPairKey(label) { return label.toLowerCase(); }
-
     function getColorFromKey(key) {
-        if (!key) return '#FFFFFF';
-        let hash = 0;
-        for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash);
-        const hue = 50 + (Math.abs(hash) % 270); 
-        return `hsl(${hue}, 45%, 96%)`;
+        if (!key) return '#FFFFFF'; let hash = 0; for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash);
+        const hue = 50 + (Math.abs(hash) % 270); return `hsl(${hue}, 45%, 96%)`;
     }
 
     function opOverhandStep() {
-        const p = piles[activePileIdx];
-        if (p.deck.length === 0) return;
-        if (p.tempHand.length === 0) saveState();
-        const rng = getRNG();
-        const min = parseInt(document.getElementById('ohMin').value) || 1;
-        const max = parseInt(document.getElementById('ohMax').value) || 6;
+        const p = piles[activePileIdx]; if (p.deck.length === 0) return; if (p.tempHand.length === 0) saveState();
+        const rng = getRNG(); const min = parseInt(document.getElementById('ohMin').value) || 1; const max = parseInt(document.getElementById('ohMax').value) || 6;
         let n = Math.floor(rng() * (max - min + 1)) + min;
-        const bundle = p.deck.splice(0, Math.min(n, p.deck.length));
-        p.tempHand = [...bundle, ...p.tempHand];
-        render();
+        const bundle = p.deck.splice(0, Math.min(n, p.deck.length)); p.tempHand = [...bundle, ...p.tempHand]; render();
     }
-
     function opOverhandFinish() {
-        const p = piles[activePileIdx];
-        if (p.deck.length === 0 && p.tempHand.length === 0) return;
-        saveState();
-        const rng = getRNG();
-        const min = parseInt(document.getElementById('ohMin').value) || 1;
-        const max = parseInt(document.getElementById('ohMax').value) || 6;
+        const p = piles[activePileIdx]; if (p.deck.length === 0 && p.tempHand.length === 0) return; saveState();
+        const rng = getRNG(); const min = parseInt(document.getElementById('ohMin').value) || 1; const max = parseInt(document.getElementById('ohMax').value) || 6;
         let workingDeck = [...p.deck], workingHand = [...p.tempHand];
-        while (workingDeck.length > 0) {
-            let n = Math.floor(rng() * (max - min + 1)) + min;
-            let bundle = workingDeck.splice(0, Math.min(n, workingDeck.length));
-            workingHand = [...bundle, ...workingHand];
-        }
-        p.deck = workingHand; p.tempHand = [];
-        render();
+        while (workingDeck.length > 0) { let n = Math.floor(rng() * (max - min + 1)) + min; let bundle = workingDeck.splice(0, Math.min(n, workingDeck.length)); workingHand = [...bundle, ...workingHand]; }
+        p.deck = workingHand; p.tempHand = []; render();
     }
-
     function opRiffle() {
-        const p = piles[activePileIdx];
-        if (p.deck.length < 2) return;
-        saveState();
-        const rng = getRNG();
-        const passes = parseInt(document.getElementById('rifflePasses').value) || 1;
-        const cMax = parseInt(document.getElementById('chunkMax').value);
+        const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
+        const rng = getRNG(); const passes = parseInt(document.getElementById('rifflePasses').value) || 1; const cMax = parseInt(document.getElementById('chunkMax').value);
         for (let ps = 0; ps < passes; ps++) {
-            let L = p.deck.length;
-            let cutPoint = Math.floor(L/2) + Math.floor(rng() * 7) - 3;
+            let L = p.deck.length; let cutPoint = Math.floor(L/2) + Math.floor(rng() * 7) - 3;
             let left = p.deck.slice(0, cutPoint), right = p.deck.slice(cutPoint), result = [];
-            while (left.length > 0 || right.length > 0) {
-                let side = (left.length > 0 && right.length > 0) ? (rng() < 0.5 ? left : right) : (left.length > 0 ? left : right);
-                let n = Math.floor(rng() * cMax) + 1;
-                result.push(...side.splice(0, Math.min(n, side.length)));
-            }
+            while (left.length > 0 || right.length > 0) { let side = (left.length > 0 && right.length > 0) ? (rng() < 0.5 ? left : right) : (left.length > 0 ? left : right); let n = Math.floor(rng() * cMax) + 1; result.push(...side.splice(0, Math.min(n, side.length))); }
             p.deck = result;
-        }
-        render();
+        } render();
     }
-
     function opFaro() {
-        const p = piles[activePileIdx];
-        if (p.deck.length < 2) return;
-        saveState();
-        const split = parseInt(document.getElementById('faroSplit').value);
-        const mode = document.getElementById('faroMode').value;
-        const ratio = document.getElementById('faroRatio').value;
-        let A = p.deck.slice(0, split), B = p.deck.slice(split);
-        let first = (mode === 'out') ? A : B, second = (mode === 'out') ? B : A;
-        let result = [], r1 = 1, r2 = 1;
-        if (ratio === '2-2') { r1 = 2; r2 = 2; }
-        if (ratio === '2-1') { r1 = 2; r2 = 1; }
-        while (first.length > 0 || second.length > 0) {
-            if (first.length > 0) result.push(...first.splice(0, r1));
-            if (second.length > 0) result.push(...second.splice(0, r2));
-        }
+        const p = piles[activePileIdx]; if (p.deck.length < 2) return; saveState();
+        const split = parseInt(document.getElementById('faroSplit').value); const mode = document.getElementById('faroMode').value; const ratio = document.getElementById('faroRatio').value;
+        let A = p.deck.slice(0, split), B = p.deck.slice(split); let first = (mode === 'out') ? A : B, second = (mode === 'out') ? B : A;
+        let result = [], r1 = 1, r2 = 1; if (ratio === '2-2') { r1 = 2; r2 = 2; } else if (ratio === '2-1') { r1 = 2; r2 = 1; }
+        while (first.length > 0 || second.length > 0) { if (first.length > 0) result.push(...first.splice(0, r1)); if (second.length > 0) result.push(...second.splice(0, r2)); }
         p.deck = result; render();
     }
-
-    function opCut() {
-        const p = piles[activePileIdx];
-        if (p.deck.length === 0) return;
-        saveState();
-        const d = p.deck;
-        let n = parseInt(document.getElementById('cutN').value) % d.length;
-        if (n < 0) n += d.length;
-        p.deck = [...d.slice(n), ...d.slice(0, n)];
-        render();
-    }
+    function opCut() { saveState(); const d = piles[activePileIdx].deck; if (d.length === 0) return; let n = parseInt(document.getElementById('cutN').value) % d.length; if (n < 0) n += d.length; piles[activePileIdx].deck = [...d.slice(n), ...d.slice(0, n)]; render(); }
 
     function render() {
-        const p = piles[activePileIdx];
-        const fullDeck = [...p.tempHand, ...p.deck];
-        let adj = 0;
-        for (let i = 1; i < fullDeck.length; i++) { if (getPairKey(fullDeck[i].label) === getPairKey(fullDeck[i-1].label)) adj++; }
+        const p = piles[activePileIdx]; const fullDeck = [...p.tempHand, ...p.deck];
+        let adj = 0; for (let i = 1; i < fullDeck.length; i++) { if (getPairKey(fullDeck[i].label) === getPairKey(fullDeck[i-1].label)) adj++; }
         document.getElementById('statsBar').innerHTML = `<span class="stats-tag">ペア: ${adj}</span><span class="stats-tag">枚数: ${fullDeck.length}</span>`;
-
-        const handArea = document.getElementById('handArea');
-        handArea.classList.toggle('hidden', p.tempHand.length === 0);
+        const handArea = document.getElementById('handArea'); handArea.classList.toggle('hidden', p.tempHand.length === 0);
         const handDisplay = document.getElementById('handDisplay'); handDisplay.innerHTML = '';
         p.tempHand.forEach((card, idx) => handDisplay.appendChild(createCardEl(card, idx + 1, true)));
-
         const deckDisplay = document.getElementById('deckDisplay'); deckDisplay.innerHTML = '';
         p.deck.forEach((card, idx) => deckDisplay.appendChild(createCardEl(card, p.tempHand.length + idx + 1, false)));
         document.getElementById('deckAreaLabel').innerText = p.tempHand.length > 0 ? "元の山の残り" : "現在の山";
-
         if (sortableInstance) sortableInstance.destroy();
         sortableInstance = Sortable.create(deckDisplay, { animation: 150, onEnd: function (evt) {
-            saveState(); const d = [...p.tempHand, ...p.deck]; const item = d.splice(evt.oldIndex + p.tempHand.length, 1)[0];
-            d.splice(evt.newIndex + p.tempHand.length, 0, item); p.tempHand = []; p.deck = d; render();
+            saveState(); const d = [...p.tempHand, ...p.deck]; const item = d.splice(evt.oldIndex + p.tempHand.length, 1)[0]; d.splice(evt.newIndex + p.tempHand.length, 0, item); p.tempHand = []; p.deck = d; render();
         }});
     }
 
     function createCardEl(card, pos, inHand) {
-        const el = document.createElement('div');
-        el.className = `card ${card.faceUp ? '' : 'face-down'} ${inHand ? 'in-hand-highlight' : ''}`;
+        const el = document.createElement('div'); el.className = `card ${card.faceUp ? '' : 'face-down'} ${inHand ? 'in-hand-highlight' : ''}`;
         const posEl = document.createElement('div'); posEl.className = 'card-pos'; posEl.innerText = pos; el.appendChild(posEl);
         if (card.faceUp) {
             el.style.backgroundColor = getColorFromKey(getPairKey(card.label));
-            const span = document.createElement('span'); span.innerText = card.label;
-            if (/^(?:[AJQK1-9]|10)[HD]$/.test(card.label)) span.classList.add('text-red-suit'); el.appendChild(span);
+            const span = document.createElement('span'); span.innerText = card.label; if (/^(?:[AJQK1-9]|10)[HD]$/.test(card.label)) span.classList.add('text-red-suit'); el.appendChild(span);
         }
-        el.onclick = (e) => { 
-            saveState(); 
-            if (e.shiftKey) { 
-                const d = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck];
-                d.splice(pos-1, 1); piles[activePileIdx].tempHand = []; piles[activePileIdx].deck = d;
-            } else { card.faceUp = !card.faceUp; }
-            render();
-        };
+        el.onclick = (e) => { saveState(); if (e.shiftKey) { const d = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; d.splice(pos - 1, 1); piles[activePileIdx].tempHand = []; piles[activePileIdx].deck = d; } else { card.faceUp = !card.faceUp; } render(); };
         return el;
     }
 
@@ -412,14 +308,12 @@
         if (type === 'mnemonica') "4C 2H 7D 3C 4H 6D AS 5H 9S 2S QH 3D QC 8H 6S 5S 9H KC 2D JH 3S 8S 6H 10C 5D KD 2C 3H 8D 5C KS JD 8C 10S KH JC 7S 10H AD 4S 7H 4D AC 9C JS QD 7C QS 10D 6C AH 9D".split(' ').forEach(l => newDeck.push(create(l)));
         piles[activePileIdx].deck = newDeck; piles[activePileIdx].tempHand = []; render();
     }
-
     function applyCustom() {
         const val = document.getElementById('customInput').value.trim(); if (!val) return; saveState();
         if (!isNaN(val)) piles[activePileIdx].deck = Array.from({length: parseInt(val)}, (_, i) => ({ label: String(i+1), faceUp: true, id: Math.random() }));
         else piles[activePileIdx].deck = val.split(/[\s, \n]+/).filter(t => t).map(t => ({ label: t.replace(/[v*↓]$/,''), faceUp: !/[v*↓]$/.test(t), id: Math.random() }));
         piles[activePileIdx].tempHand = []; render();
     }
-
     function copyDeckText() { const full = [...piles[activePileIdx].tempHand, ...piles[activePileIdx].deck]; navigator.clipboard.writeText(full.map(c => c.label + (c.faceUp ? '' : 'v')).join(' ')); alert("コピーしました"); }
     render();
 </script>
